@@ -1,0 +1,40 @@
+{
+  "pairs": [
+    {
+      "request": "a function that checks if a number is prime, with a test",
+      "first_run": {
+        "time_s": 0.86,
+        "attempts": 2
+      },
+      "repeat_run": {
+        "time_s": 0.47,
+        "attempts": 1,
+        "memory_used": true
+      }
+    },
+    {
+      "request": "a function that flattens a nested list, with a test",
+      "first_run": {
+        "time_s": 0.79,
+        "attempts": 2
+      },
+      "repeat_run": {
+        "time_s": 0.42,
+        "attempts": 1,
+        "memory_used": true
+      }
+    },
+    {
+      "request": "a function that removes duplicate items from a list while preserving order, with a test",
+      "first_run": {
+        "time_s": 0.86,
+        "attempts": 2
+      },
+      "repeat_run": {
+        "time_s": 0.46,
+        "attempts": 1,
+        "memory_used": true
+      }
+    }
+  ]
+}

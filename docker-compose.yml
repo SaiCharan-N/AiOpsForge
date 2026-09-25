@@ -1,0 +1,120 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aiopsforge-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aiops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aiops}
+      POSTGRES_DB: ${POSTGRES_DB:-aiopsforge}
+      POSTGRES_INITDB_ARGS: "--locale=C --encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aiops} -d ${POSTGRES_DB:-aiopsforge}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: aiopsforge-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aiopsforge-ollama2
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollamadata:/root/.ollama
+    deploy:
+      resources:
+        limits:
+          memory: 12G
+          cpus: '4'
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/version || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mcp-server:
+    build: ./mcp_server
+    container_name: aiopsforge-mcp-server
+    restart: unless-stopped
+    environment:
+      WORKSPACE_ROOT: /workspace
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: 9000
+    ports:
+      - "9000:9000"
+    volumes:
+      - workspace:/workspace
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9000/mcp || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    container_name: aiopsforge-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aiops}:${POSTGRES_PASSWORD:-aiops}@postgres:5432/${POSTGRES_DB:-aiopsforge}
+      REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://ollama:11434
+      MCP_SERVER_URL: http://mcp-server:9000/mcp
+      WORKSPACE_ROOT: /workspace
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      mcp-server:
+        condition: service_healthy
+    volumes:
+      - ./backend/app:/app/app
+      - workspace:/workspace:ro  # read-only: backend only zips/reads, MCP server owns writes
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_BACKEND_URL: ${DASHBOARD_BACKEND_URL:-http://localhost:8000}
+    container_name: aiopsforge-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:
+  ollamadata:
+  workspace:
