@@ -1,0 +1,39 @@
+{
+  "sequence": [
+    {
+      "position_in_sequence": 1,
+      "request": "a function that sums all elements in a list using a manually indexed loop, with a test",
+      "time_s": 1.2,
+      "attempts": 3,
+      "memory_used": false
+    },
+    {
+      "position_in_sequence": 2,
+      "request": "a function that finds the last element of a list using index arithmetic, with a test",
+      "time_s": 0.83,
+      "attempts": 2,
+      "memory_used": false
+    },
+    {
+      "position_in_sequence": 3,
+      "request": "a function that reverses a list in place using a manually indexed loop, with a test",
+      "time_s": 0.48,
+      "attempts": 1,
+      "memory_used": true
+    },
+    {
+      "position_in_sequence": 4,
+      "request": "a function that copies every element of an array into a new array using an indexed loop, with a test",
+      "time_s": 0.31,
+      "attempts": 1,
+      "memory_used": true
+    },
+    {
+      "position_in_sequence": 5,
+      "request": "a function that computes a running total over a list using index-based iteration, with a test",
+      "time_s": 0.34,
+      "attempts": 1,
+      "memory_used": true
+    }
+  ]
+}

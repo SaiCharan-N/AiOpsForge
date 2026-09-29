@@ -1,0 +1,592 @@
+:root {
+  color-scheme: dark;
+  --bg: #0f1115;
+  --panel: #171a21;
+  --panel-border: #262b36;
+  --text: #e5e7eb;
+  --text-dim: #9ca3af;
+  --accent: #6366f1;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  margin: 0.25rem 0 2rem;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.request-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.request-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.request-form textarea,
+.request-form input {
+  background: #0d0f14;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.request-form textarea:focus,
+.request-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.request-form button {
+  align-self: flex-start;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.request-form button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-banner {
+  margin-top: 1rem;
+  background: #2a1315;
+  border: 1px solid #7f1d1d;
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.status-panel {
+  margin-top: 1.75rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.status-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.status-panel-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.request-echo {
+  margin: 0.25rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.badge {
+  display: inline-block;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  background: #0d0f14;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+.task-row-empty {
+  color: var(--text-dim);
+  font-style: italic;
+  justify-content: center;
+}
+
+.task-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.task-order {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.task-desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.memory-chip {
+  font-size: 0.75rem;
+  color: #c4b5fd;
+  background: #2e1065;
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
+}
+
+.attempts {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 1.1rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.download-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------------------
+   Phase 5: chat interface + live flow diagram (replaces the old
+   form/status-panel layout above, which is kept for older builds but no
+   longer rendered by App.jsx).
+   --------------------------------------------------------------------- */
+
+.flow-diagram-wrap {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 0.75rem 1rem 0.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.flow-diagram {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.flow-node {
+  fill: #0d0f14;
+  stroke: var(--panel-border);
+  stroke-width: 1.5;
+  transition: stroke 0.2s ease, fill 0.2s ease;
+}
+
+.flow-node-active {
+  stroke: var(--accent);
+  fill: #1a1c3a;
+  stroke-width: 2;
+}
+
+.flow-node-pulse {
+  animation: flow-pulse 0.9s ease-out;
+}
+
+@keyframes flow-pulse {
+  0%   { filter: drop-shadow(0 0 0px var(--accent)); }
+  40%  { filter: drop-shadow(0 0 8px var(--accent)); }
+  100% { filter: drop-shadow(0 0 0px var(--accent)); }
+}
+
+.flow-node-label {
+  fill: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.flow-node-sub {
+  fill: var(--text-dim);
+  font-size: 10px;
+}
+
+.flow-arrow {
+  fill: none;
+  stroke: var(--panel-border);
+  stroke-width: 1.5;
+}
+
+.flow-arrow-active {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.flow-arrow-dashed {
+  stroke-dasharray: 5 4;
+}
+
+.flow-arrowhead {
+  fill: var(--panel-border);
+}
+
+.flow-arrow-label {
+  fill: var(--text-dim);
+  font-size: 10px;
+}
+
+.flow-arrow-label-active {
+  fill: var(--accent);
+  font-weight: 600;
+}
+
+.chat-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding: 0.25rem 0.25rem 0.5rem;
+}
+
+.chat-empty {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.bubble {
+  display: flex;
+  gap: 0.65rem;
+  max-width: 88%;
+}
+
+.bubble-user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.bubble-avatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.bubble-body {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 0.55rem 0.8rem;
+  min-width: 0;
+}
+
+.bubble-user .bubble-body {
+  background: #1e1b4b;
+  border-color: #3730a3;
+}
+
+.bubble-meta {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  margin-bottom: 0.15rem;
+}
+
+.bubble-agent {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.bubble-time {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.bubble-text {
+  font-size: 0.88rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bubble-badge {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+}
+
+.bubble-badge-good  { background: #052e16; color: #4ade80; }
+.bubble-badge-bad   { background: #2a1315; color: #fca5a5; }
+.bubble-badge-warn  { background: #2a1c05; color: #fbbf24; }
+.bubble-badge-memory{ background: #2e1065; color: #c4b5fd; }
+
+.chat-composer {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 0.6rem;
+}
+
+.chat-composer textarea {
+  flex: 1;
+  background: #0d0f14;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: none;
+}
+
+.chat-composer textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chat-composer button {
+  align-self: flex-end;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-composer button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------
+   Phase 7: real code content inside chat bubbles (developer_done /
+   developer_file_written events now carry actual source, not just a
+   filename + byte count).
+   --------------------------------------------------------------------- */
+
+.code-block {
+  margin-top: 0.5rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0a0b0f;
+}
+
+.code-block-filename {
+  font-size: 0.72rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text-dim);
+  background: #14161d;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  max-height: 320px;
+  overflow: auto;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.code-block code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  white-space: pre;
+  color: #d1d5db;
+}
+
+.bubble-badge-memory {
+  background: #2e1065;
+  color: #c4b5fd;
+}
+
+/* ---------------------------------------------------------------------
+   Phase 10: full-viewport split layout — chat on the left, live agent
+   flow diagram on the right, both stretching edge to edge. Replaces the
+   old centered single-column `.app-wide` layout.
+   --------------------------------------------------------------------- */
+
+html, body, #root {
+  height: 100%;
+}
+
+.app-split {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.topbar {
+  flex-shrink: 0;
+  padding: 1rem 1.75rem;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.topbar .subtitle {
+  margin: 0.2rem 0 0;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.split-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.split-left,
+.split-right {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+.split-left {
+  border-right: 1px solid var(--panel-border);
+  min-height: 0;
+}
+
+.split-right {
+  min-height: 0;
+}
+
+/* Overrides the earlier fixed max-height: 55vh — in the split layout the
+   feed should fill all the vertical space the left pane has, not a
+   fraction of the viewport. */
+.split-left .chat-feed {
+  flex: 1;
+  max-height: none;
+  min-height: 0;
+}
+
+.split-left .chat-composer {
+  flex-shrink: 0;
+}
+
+/* FlowDiagram fills the entire right pane; the SVG's own viewBox keeps
+   its aspect ratio and centers itself within whatever space that leaves
+   (default preserveAspectRatio="xMidYMid meet" handles this with no
+   extra markup). */
+.split-right .flow-diagram-wrap {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  margin-bottom: 0;
+}
+
+.split-right .flow-diagram {
+  width: 100%;
+  height: 100%;
+}
+
+/* Narrow screens: stack instead of side-by-side so nothing gets
+   crushed unreadably thin. */
+@media (max-width: 860px) {
+  .split-body {
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .split-left {
+    border-right: none;
+    border-bottom: 1px solid var(--panel-border);
+    flex: 1 1 auto;
+  }
+  .split-left .chat-feed {
+    max-height: 40vh;
+  }
+  .split-right {
+    flex: 0 0 260px;
+  }
+}

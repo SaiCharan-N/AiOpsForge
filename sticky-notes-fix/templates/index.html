@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticky Notes</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Sticky Notes</h1>
+        
+        <div class="create-section">
+            <h2>Create a New Note</h2>
+            <form id="noteForm" method="POST" action="/notes">
+                <input type="text" name="title" placeholder="Note title..." required>
+                <textarea name="content" placeholder="Write your note here..." required></textarea>
+                <button type="submit">Create Note</button>
+            </form>
+        </div>
+
+        <div class="notes-section">
+            <h2>Your Notes</h2>
+            <div class="notes-grid">
+                {% if notes %}
+                    {% for note_id, note in notes.items() %}
+                        <div class="sticky-note" style="background-color: #{{ note.color }};">
+                            <div class="note-header">
+                                <h3>{{ note.title }}</h3>
+                                <div class="note-actions">
+                                    <a href="/notes/{{ note.id }}" class="btn-small">View</a>
+                                    <button class="btn-small delete-btn" onclick="deleteNote({{ note.id }})">Delete</button>
+                                </div>
+                            </div>
+                            <p>{{ note.content[:100] }}{% if note.content|length > 100 %}...{% endif %}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty-state">No notes yet. Create one to get started!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('noteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            try {
+                const response = await fetch('/notes', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to create note');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        function deleteNote(noteId) {
+            if (confirm('Are you sure you want to delete this note?')) {
+                fetch(`/notes/${noteId}`, { method: 'DELETE' })
+                    .then(() => location.reload())
+                    .catch(err => console.error('Error:', err));
+            }
+        }
+    </script>
+</body>
+</html>
