@@ -122,7 +122,7 @@ function VerticalArrow({ from, to, active, dashed, label, reverse, xOffset = 0 }
   )
 }
 
-export default function FlowDiagram({ activeNode }) {
+export default function FlowDiagram({ activeNode, paused = false }) {
   // Brief pulse animation whenever activeNode changes, so even a fast
   // event (e.g. a QA pass) is visually noticeable rather than an instant
   // color-swap someone might miss while narrating a demo.
@@ -137,7 +137,8 @@ export default function FlowDiagram({ activeNode }) {
   const developerActive = activeNode === 'developer'
 
   return (
-    <div className="flow-diagram-wrap">
+    <div className={`flow-diagram-wrap${paused ? ' flow-paused' : ''}`}>
+      {paused && <div className="flow-paused-note">⏸ Paused — waiting for your input</div>}
       <svg viewBox="0 0 680 320" className="flow-diagram">
         <defs>
           <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">

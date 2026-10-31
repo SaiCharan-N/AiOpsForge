@@ -37,7 +37,11 @@ services:
     image: ollama/ollama:latest
     container_name: aiopsforge-ollama
     restart: unless-stopped
-    mem_limit: 4g
+    # Phase 18: was a hard-coded 4g, which cannot hold a 7B model (~4.7 GB of weights plus the
+    # context cache) — Ollama then fails to load it or the container is OOM-killed. 10g fits the
+    # 7B and the 3B (loaded one at a time, OLLAMA_MAX_LOADED_MODELS=1). Lower it with
+    # OLLAMA_MEM_LIMIT in .env only if you test the 3B model alone.
+    mem_limit: ${OLLAMA_MEM_LIMIT:-10g}
     ports:
       - "11434:11434"
     volumes:
@@ -52,8 +56,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    entrypoint: /bin/sh -c "ollama serve & sleep 10 && ollama pull ${EMBEDDING_MODEL:-nomic-embed-text} && ollama pull ${OLLAMA_MODEL:-qwen2.5-coder:3b} && wait"
-    # Optimized for 8GB laptop: reduced memory, single model loaded, auto-unload after 5min
+    # Pulls the embedding model, the default model and every model in OLLAMA_EXTRA_MODELS
+    # (space separated; .env.example lists the 3B so both sizes are ready for experiments).
+    # $$ = a shell variable (docker compose would otherwise try to substitute it).
+    entrypoint: /bin/sh -c "ollama serve & sleep 10 && for m in ${EMBEDDING_MODEL:-nomic-embed-text} ${OLLAMA_MODEL:-qwen2.5-coder:7b} ${OLLAMA_EXTRA_MODELS:-}; do ollama pull $$m; done; wait"
+    # One model is kept loaded at a time and unloaded after OLLAMA_KEEP_ALIVE.
 
   mcp-server:
     build: ./mcp_server

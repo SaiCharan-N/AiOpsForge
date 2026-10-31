@@ -1,0 +1,127 @@
+{
+ "experiment": {
+  "experiment_id": "38824962-7e46-46ef-ae0b-e22945b39416",
+  "name": "mcp_overhead",
+  "design": "mcp_overhead",
+  "status": "done",
+  "error": null,
+  "created_at": "2026-10-09 03:28:42.162",
+  "finished_at": "2026-10-09 03:28:42",
+  "total_runs": 0,
+  "finished_runs": 0,
+  "progress": 1.0,
+  "config": {
+   "design": "mcp_overhead",
+   "preset": "mcp_overhead",
+   "name": "mcp_overhead",
+   "alpha": 0.05,
+   "repetitions": 1,
+   "base": {},
+   "calls": 10,
+   "total_runs": 0,
+   "environment": {
+    "started_at": "2026-10-09T03:28:42.162193+00:00",
+    "python": "3.12.3",
+    "platform": "Linux-6.18.44-fc-v80-x86_64-with-glibc2.39",
+    "default_model": "qwen2.5-coder:3b",
+    "embedding_model": "nomic-embed-text",
+    "ollama_base_url": "http://localhost:11434",
+    "default_max_qa_attempts": 3,
+    "memory_similarity_threshold": 0.75,
+    "memory_top_k": 3,
+    "failure_similarity_threshold": 0.65,
+    "batch_max_concurrency": 5
+   }
+  },
+  "arms": []
+ },
+ "result": {
+  "design": "mcp_overhead",
+  "calls": 10,
+  "mcp_ms": {
+   "n": 10,
+   "mean": 3.1773635000021727,
+   "sd": 0.02957596731598986,
+   "sem": 0.009352742072122487,
+   "median": 3.17913950000559,
+   "min": 3.1181429999946886,
+   "max": 3.20810399999516
+  },
+  "direct_ms": {
+   "n": 10,
+   "mean": 0.04417809999921474,
+   "sd": 0.0352162352934824,
+   "sem": 0.011136351414381261,
+   "median": 0.02602050000888312,
+   "min": 0.0217869999943332,
+   "max": 0.12611500000048181
+  },
+  "p95_mcp_ms": 3.20810399999516,
+  "overhead_ms": 3.133185400002958,
+  "ratio": 71.92168744374816,
+  "tests": {
+   "welch": {
+    "test": "welch_t",
+    "n_a": 10,
+    "n_b": 10,
+    "t": 215.44628612860586,
+    "df": 17.478142519617254,
+    "p": 2.2333217915162523e-31,
+    "mean_a": 0.04417809999921474,
+    "mean_b": 3.1773635000021727,
+    "diff": 3.133185400002958,
+    "ci95": [
+     3.102566656753371,
+     3.1638041432525448
+    ],
+    "cohens_d": 96.35050825668655,
+    "effect": "large",
+    "note": null
+   },
+   "mann_whitney": {
+    "test": "mann_whitney_u",
+    "n_a": 10,
+    "n_b": 10,
+    "u": 0.0,
+    "p": 0.0001826717911095504,
+    "median_a": 0.02602050000888312,
+    "median_b": 3.17913950000559,
+    "rank_biserial": 1.0,
+    "note": "normal approximation; rough for n < 8 per group"
+   }
+  },
+  "samples": {
+   "mcp_ms": [
+    3.176929000005657,
+    3.20810399999516,
+    3.151459000008572,
+    3.2031850000038276,
+    3.2029669999928956,
+    3.1181429999946886,
+    3.169749000008437,
+    3.2066480000025877,
+    3.155101000004379,
+    3.181350000005523
+   ],
+   "direct_ms": [
+    0.12611500000048181,
+    0.0424649999928306,
+    0.028046000011272554,
+    0.023995000006493683,
+    0.0217869999943332,
+    0.021859000000290507,
+    0.022297000001003653,
+    0.02208899999800451,
+    0.046451999992314086,
+    0.08667599999512277
+   ]
+  },
+  "verdict": [
+   "MCP write_file: 3.18 ms vs direct 0.044 ms per call (+3.13 ms, 72x), Welch p=2.23e-31"
+  ],
+  "warnings": [
+   "file writes are tiny; this measures the transport + session cost per tool call, which is what the pipeline pays"
+  ],
+  "design_notes": []
+ }
+}

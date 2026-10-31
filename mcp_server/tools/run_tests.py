@@ -30,7 +30,7 @@ def run_tests(project_id: str, test_path: str = ".") -> str:
     pd = project_dir(project_id)
     try:
         result = subprocess.run(
-            ["python3", "-m", "pytest", test_path, "-v", "--tb=short"],
+            ["python3", "-m", "pytest", test_path, "-v", "--tb=short", "--showlocals"],
             cwd=str(pd),
             capture_output=True,
             text=True,

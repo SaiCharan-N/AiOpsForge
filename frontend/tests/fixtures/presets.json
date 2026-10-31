@@ -1,0 +1,96 @@
+{
+ "presets": [
+  {
+   "name": "communication_mode",
+   "description": "Blackboard (shared context) vs message passing (isolated agents), memory off, 3 repetitions.",
+   "design": "ab",
+   "factor": "communication_mode",
+   "levels": [
+    "blackboard",
+    "message_passing"
+   ],
+   "requests": [
+    "a function that checks if a number is prime, with a test",
+    "a function that flattens a nested list, with a test",
+    "a function that removes duplicate items from a list while preserving order, with a test",
+    "a function that reverses a string, with a test",
+    "a function that returns the n-th Fibonacci number, with a test"
+   ],
+   "repetitions": 3
+  },
+  {
+   "name": "memory",
+   "description": "Long-term memory on vs off. Runs one at a time so earlier runs can help later ones.",
+   "design": "ab",
+   "factor": "use_memory",
+   "levels": [
+    false,
+    true
+   ],
+   "requests": [
+    "a function that sums all elements in a list using a manually indexed loop, with a test",
+    "a function that finds the last element of a list using index arithmetic, with a test",
+    "a function that reverses a list in place using a manually indexed loop, with a test",
+    "a function that copies every element of an array into a new array using an indexed loop, with a test",
+    "a function that computes a running total over a list using index-based iteration, with a test"
+   ],
+   "repetitions": 1,
+   "max_concurrency": 1
+  },
+  {
+   "name": "retry_policy",
+   "description": "How many QA attempts a task gets before escalating: 1 vs 3 vs 5, memory off.",
+   "design": "ab",
+   "factor": "max_qa_attempts",
+   "levels": [
+    1,
+    3,
+    5
+   ],
+   "requests": [
+    "a function that checks if a number is prime, with a test",
+    "a function that flattens a nested list, with a test",
+    "a function that removes duplicate items from a list while preserving order, with a test",
+    "a function that reverses a string, with a test",
+    "a function that returns the n-th Fibonacci number, with a test"
+   ],
+   "repetitions": 3
+  },
+  {
+   "name": "memory_speedup",
+   "description": "Experiment 1: each request run twice, cold then warm (paired comparison).",
+   "design": "repeat",
+   "requests": [
+    "a function that checks if a number is prime, with a test",
+    "a function that flattens a nested list, with a test",
+    "a function that removes duplicate items from a list while preserving order, with a test"
+   ]
+  },
+  {
+   "name": "repeat_bug_trend",
+   "description": "Experiment 3: related requests in sequence; does effort fall as memory accumulates?",
+   "design": "sequence",
+   "requests": [
+    "a function that sums all elements in a list using a manually indexed loop, with a test",
+    "a function that finds the last element of a list using index arithmetic, with a test",
+    "a function that reverses a list in place using a manually indexed loop, with a test",
+    "a function that copies every element of an array into a new array using an indexed loop, with a test",
+    "a function that computes a running total over a list using index-based iteration, with a test"
+   ]
+  },
+  {
+   "name": "mcp_overhead",
+   "description": "Experiment 2: latency of an MCP write_file call vs a direct file write.",
+   "design": "mcp_overhead",
+   "calls": 20
+  }
+ ],
+ "factors": [
+  "communication_mode",
+  "framework",
+  "model",
+  "max_qa_attempts",
+  "use_memory"
+ ],
+ "metrics": []
+}

@@ -1,0 +1,41 @@
+{
+  "captured_at": "2026-10-30T07:17:17.027653+00:00",
+  "machine": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 140 Stepping 1, GenuineIntel",
+    "cpu_count": 8,
+    "ram_gb": 7.7,
+    "gpu": "NVIDIA GeForce MX350, 2048 MiB"
+  },
+  "software": {
+    "python": "3.12.1",
+    "docker": "Docker version 29.8.0, build 88096ef",
+    "docker_compose": "Docker Compose version v5.5.1",
+    "ollama_cli": "ollama version is 0.34.4\nWarning: client version is 0.24.0"
+  },
+  "ollama": {
+    "base_url": "http://localhost:11434",
+    "version": "0.34.4",
+    "models": {
+      "qwen2.5-coder:3b": {
+        "family": "qwen2",
+        "parameter_size": "3.1B",
+        "quantization_level": "Q4_K_M",
+        "format": "gguf"
+      }
+    }
+  },
+  "code": {
+    "git_commit": "274147605d8a6603ef3b0fc7e722859092de92e9",
+    "backend_app_sha256": "689280fe07faf8cd"
+  },
+  "env_vars": {
+    "OLLAMA_NUM_PARALLEL": null,
+    "OLLAMA_MAX_LOADED_MODELS": null,
+    "OLLAMA_KEEP_ALIVE": null,
+    "OLLAMA_TEMPERATURE": null,
+    "OLLAMA_SEED": null,
+    "OLLAMA_NUM_CTX": null
+  },
+  "note": "Also store the .env used for the run (without secrets) and the docker-compose.yml."
+}

@@ -1,0 +1,262 @@
+{
+ "experiment": {
+  "experiment_id": "cc47b633-ee83-44b2-b14b-6f49735b877e",
+  "name": "sequence",
+  "design": "sequence",
+  "status": "done",
+  "error": null,
+  "created_at": "2026-10-09 03:28:42.148",
+  "finished_at": "2026-10-09 03:28:42",
+  "total_runs": 8,
+  "finished_runs": 8,
+  "progress": 1.0,
+  "config": {
+   "design": "sequence",
+   "preset": null,
+   "name": "sequence",
+   "alpha": 0.05,
+   "repetitions": 1,
+   "base": {
+    "use_memory": true
+   },
+   "requests": [
+    "s0",
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5",
+    "s6",
+    "s7"
+   ],
+   "max_concurrency": 1,
+   "isolation": [
+    "memory ON; requests run strictly one after another"
+   ],
+   "total_runs": 8,
+   "environment": {
+    "started_at": "2026-10-09T03:28:42.148077+00:00",
+    "python": "3.12.3",
+    "platform": "Linux-6.18.44-fc-v80-x86_64-with-glibc2.39",
+    "default_model": "qwen2.5-coder:3b",
+    "embedding_model": "nomic-embed-text",
+    "ollama_base_url": "http://localhost:11434",
+    "default_max_qa_attempts": 3,
+    "memory_similarity_threshold": 0.75,
+    "memory_top_k": 3,
+    "failure_similarity_threshold": 0.65,
+    "batch_max_concurrency": 5
+   }
+  },
+  "arms": [
+   {
+    "batch_id": "dc6f9a45-c67e-4fb7-986a-0058d7fb9765",
+    "level": "sequence",
+    "status": "done",
+    "total": 8,
+    "finished": 8,
+    "passed": 8,
+    "needs_review": 0,
+    "errors": 0
+   }
+  ]
+ },
+ "result": {
+  "design": "sequence",
+  "series": [
+   {
+    "position": 1,
+    "request": "s0",
+    "status": "passed",
+    "avg_attempts": 4.0,
+    "total_ms": 3600,
+    "tokens_total": 315,
+    "memory_hits": 0,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 2,
+    "request": "s1",
+    "status": "passed",
+    "avg_attempts": 3.0,
+    "total_ms": 3200,
+    "tokens_total": 288,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 3,
+    "request": "s2",
+    "status": "passed",
+    "avg_attempts": 3.0,
+    "total_ms": 2800,
+    "tokens_total": 265,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 4,
+    "request": "s3",
+    "status": "passed",
+    "avg_attempts": 2.0,
+    "total_ms": 2400,
+    "tokens_total": 240,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 5,
+    "request": "s4",
+    "status": "passed",
+    "avg_attempts": 2.0,
+    "total_ms": 2000,
+    "tokens_total": 214,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 6,
+    "request": "s5",
+    "status": "passed",
+    "avg_attempts": 1.0,
+    "total_ms": 1600,
+    "tokens_total": 190,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 7,
+    "request": "s6",
+    "status": "passed",
+    "avg_attempts": 1.0,
+    "total_ms": 1200,
+    "tokens_total": 161,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   },
+   {
+    "position": 8,
+    "request": "s7",
+    "status": "passed",
+    "avg_attempts": 1.0,
+    "total_ms": 800,
+    "tokens_total": 139,
+    "memory_hits": 1,
+    "ifs_avg": 0.8
+   }
+  ],
+  "trends": {
+   "tokens_total": {
+    "test": "linear_trend",
+    "n": 8,
+    "slope": -25.214285714285715,
+    "intercept": 339.9642857142857,
+    "r": -0.9997740362248574,
+    "p": 2.883917750347199e-11,
+    "note": null
+   },
+   "total_ms": {
+    "test": "linear_trend",
+    "n": 8,
+    "slope": -400.0,
+    "intercept": 4000.0,
+    "r": -1.0,
+    "p": 0.0,
+    "note": null
+   },
+   "est_cost_usd": {
+    "test": "linear_trend",
+    "n": 0,
+    "slope": null,
+    "intercept": null,
+    "r": null,
+    "p": null,
+    "note": "need at least 3 points"
+   },
+   "avg_attempts": {
+    "test": "linear_trend",
+    "n": 8,
+    "slope": -0.44047619047619047,
+    "intercept": 4.107142857142858,
+    "r": -0.9582148616007907,
+    "p": 0.00017672371369930692,
+    "note": null
+   }
+  },
+  "first_vs_second_half": {
+   "avg_attempts": {
+    "test": "welch_t",
+    "n_a": 4,
+    "n_b": 4,
+    "t": -3.6556307750696546,
+    "df": 4.972602739726026,
+    "p": 0.01480414325662309,
+    "mean_a": 3.0,
+    "mean_b": 1.25,
+    "diff": -1.75,
+    "ci95": [
+     -2.982614438684398,
+     -0.5173855613156022
+    ],
+    "cohens_d": -2.5849213105659876,
+    "effect": "large",
+    "note": null
+   },
+   "total_ms": {
+    "test": "welch_t",
+    "n_a": 4,
+    "n_b": 4,
+    "t": -4.3817804600413295,
+    "df": 6.0,
+    "p": 0.004659214943993931,
+    "mean_a": 3000.0,
+    "mean_b": 1400.0,
+    "diff": -1600.0,
+    "ci95": [
+     -2493.485878065881,
+     -706.514121934119
+    ],
+    "cohens_d": -3.0983866769659336,
+    "effect": "large",
+    "note": null
+   },
+   "tokens_total": {
+    "test": "welch_t",
+    "n_a": 4,
+    "n_b": 4,
+    "t": -4.403809273989168,
+    "df": 5.996337300655603,
+    "p": 0.004556265650539652,
+    "mean_a": 277.0,
+    "mean_b": 176.0,
+    "diff": -101.0,
+    "ci95": [
+     -157.1274748086849,
+     -44.87252519131512
+    ],
+    "cohens_d": -3.113963400689948,
+    "effect": "large",
+    "note": null
+   }
+  },
+  "memory_hit_rate": 0.875,
+  "metric_labels": {
+   "tokens_total": "Tokens",
+   "total_ms": "Latency (ms)",
+   "est_cost_usd": "Est. cost (USD)",
+   "avg_attempts": "Attempts per task",
+   "ifs_avg": "Instruction fidelity (IFS)",
+   "pass": "Run passed"
+  },
+  "verdict": [
+   "Tokens: slope -25.21 per position (r=-1.00, p=2.88e-11)",
+   "Latency (ms): slope -400 per position (r=-1.00, p=0)",
+   "Attempts per task: slope -0.4405 per position (r=-0.96, p=0.000177)"
+  ],
+  "warnings": [],
+  "batch_id": "dc6f9a45-c67e-4fb7-986a-0058d7fb9765",
+  "design_notes": [
+   "memory ON; requests run strictly one after another"
+  ]
+ }
+}

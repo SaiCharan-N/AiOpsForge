@@ -11,6 +11,7 @@ regenerating blind.
 """
 import re
 
+from app.scaffolds import get_framework
 from app.llm import generate
 from app.mcp_client import call_tool
 from app.schemas import Task, TestResult
@@ -46,31 +47,54 @@ def _extract_code(raw: str) -> str:
 
 def _format_failure_analysis(analysis: dict) -> str:
     """Turns a Failure Analyzer result (see app.agents.failure_analyzer)
-    into the repair-focused prompt block the Developer actually needs.
+    into the repair-focused prompt block the Developer actually needs:
+    where it failed, the variable values at that moment, a specific fix,
+    what was already tried, and what similar failures were fixed with.
 
-    Bug this fixes: previously, a retry only ever saw
-    `previous_failure.error` — the raw QA output, truncated, with no root
-    cause isolated, no affected function named, and no memory-informed
-    hint — even though the Failure Analyzer node already computed all of
-    that and then discarded it after logging it to the live event feed.
-    The Developer was effectively re-diagnosing the same failure from
-    scratch on every retry instead of being handed the diagnosis.
+    History: a retry used to see only `previous_failure.error` — the raw
+    QA output, truncated, with no root cause, no location and no memory of
+    earlier attempts — even though the Failure Analyzer had already
+    computed all of that and then discarded it after logging it.
     """
-    lines = [f"Root cause: {analysis.get('root_cause', 'unknown')}"]
+    lines = []
+    head = f"Error: {analysis.get('error_type', 'unknown')}"
+    if analysis.get("error_category"):
+        head += f" ({analysis['error_category']})"
+    if analysis.get("message"):
+        head += f" — {analysis['message'][:200]}"
+    lines.append(head)
+    if analysis.get("code_location"):
+        lines.append(f"Location: {analysis['code_location']}")
+    lines.append(f"Root cause: {analysis.get('root_cause', 'unknown')}")
     if analysis.get("affected_function") and analysis["affected_function"] != "unknown":
         lines.append(f"Affected function/section: {analysis['affected_function']}")
+    if analysis.get("variables"):
+        lines.append("Variable values at the failure: " + ", ".join(
+            f"{k} = {v}" for k, v in list(analysis["variables"].items())[:8]))
+    if analysis.get("snippet"):
+        lines.append("Failing code (line numbers are for reference only):\n" + analysis["snippet"])
     if analysis.get("hint"):
         lines.append(f"Suggested fix: {analysis['hint']}")
-    if analysis.get("repair_strategy"):
-        lines.append(
-            f"Repair strategy: {analysis['repair_strategy']} "
-            f"(modify the specific issue above — do not rewrite unrelated code)"
-        )
+
+    strategy = analysis.get("repair_strategy")
+    if strategy == "regenerate":
+        lines.append("Repair strategy: regenerate — earlier fixes to this error kept failing, so "
+                     "rewrite the file with a DIFFERENT approach.")
+    elif strategy == "rewrite_function":
+        lines.append("Repair strategy: rewrite the affected function from scratch; keep the rest of the file.")
+    elif strategy:
+        lines.append(f"Repair strategy: {strategy} (modify the specific issue above — do not rewrite unrelated code)")
+
+    prev = analysis.get("previous_attempts") or []
+    if prev:
+        lines.append("Already tried and failed (do not repeat):\n" + "\n".join(
+            f"  - attempt {p.get('attempt')}: {p.get('error_type')} at {p.get('code_location')}"
+            for p in prev))
 
     similar = analysis.get("similar_fixes") or []
     if similar:
         examples = "\n".join(
-            f"  - {s.get('problem_signature', '')[:80]} -> {s.get('solution_summary', '')[:120]}"
+            f"  - {s.get('problem_signature', '')[:80]} -> {s.get('solution_summary', '')[:160]}"
             for s in similar
         )
         lines.append(f"Similar failures fixed before:\n{examples}")
@@ -85,6 +109,9 @@ def generate_code(
     memory_context: list[dict] | None = None,
     original_request: str | None = None,
     failure_analysis: dict | None = None,
+    previous_code: str | None = None,
+    user_guidance: list[str] | None = None,
+    framework: str | None = None,
 ) -> tuple[str, str]:
     """Generates code for `task` and returns (code, filename). Does NOT write
     the file — that's the graph node's job, via the MCP write_file tool
@@ -139,16 +166,43 @@ def generate_code(
         )
 
     prompt += f"Task: {task.description}"
+    framework = framework or task.framework
+    if framework:
+        # e.g. "Write a Flask route ..." — tell the model which framework's
+        # idioms (and which test client) to use instead of guessing.
+        prompt += f"\n\n{get_framework(framework).developer_note}"
+    if user_guidance:
+        prompt += ("\n\nThe user reviewed the work so far and gave this guidance — follow it, "
+                   "it takes priority over your own assumptions:\n"
+                   + "\n".join(f"- {g}" for g in user_guidance))
+        if previous_failure is None and previous_code:
+            # A guided regeneration (the user disliked the first file): show the
+            # previous version so the guidance is applied to it, not guessed at.
+            numbered = "\n".join(
+                f"{i:>3}: {line}" for i, line in enumerate(previous_code[:12000].splitlines(), 1))
+            prompt += ("\n\nYour previous version (line numbers added for reference — do NOT include them "
+                       f"in your answer):\n{numbered}\n\nRevise it according to the guidance.")
     if previous_failure is not None:
         prompt += (
             f"\n\nYour previous attempt FAILED when tested. Fix it.\n"
             f"Test error:\n{previous_failure.error or previous_failure.output}"
         )
+        if previous_code:
+            # Line-numbered so the diagnosis ("line 5") can be applied
+            # exactly; the model is told not to copy the numbers back.
+            numbered = "\n".join(
+                f"{i:>3}: {line}" for i, line in enumerate(previous_code[:12000].splitlines(), 1)
+            )
+            prompt += (
+                f"\n\nYour previous code (line numbers added for reference — do NOT include "
+                f"them in your answer):\n{numbered}"
+            )
         if failure_analysis and failure_analysis.get("root_cause"):
             prompt += (
                 f"\n\nFailure Analyzer diagnosis (use this to make a targeted "
                 f"fix, not a rewrite):\n{_format_failure_analysis(failure_analysis)}"
             )
+        prompt += "\n\nReturn the complete corrected file."
 
     raw = generate(prompt, system=DEVELOPER_SYSTEM_PROMPT)
     code = _extract_code(raw)

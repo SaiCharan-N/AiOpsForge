@@ -1,0 +1,55 @@
+{
+  "started_at": "2026-10-30T07:17:16.994952+00:00",
+  "models": [
+    "qwen2.5-coder:3b"
+  ],
+  "arms": {
+    "A1": {
+      "label": "message passing, 1 attempt, no memory (baseline)",
+      "defaults": {
+        "communication_mode": "message_passing",
+        "max_qa_attempts": 1,
+        "use_memory": false
+      }
+    },
+    "A3": {
+      "label": "blackboard, 3 attempts + failure recovery, no memory",
+      "defaults": {
+        "communication_mode": "blackboard",
+        "max_qa_attempts": 3,
+        "use_memory": false,
+        "failure_recovery": true
+      }
+    }
+  },
+  "tasks": [
+    "T01",
+    "T04"
+  ],
+  "reps": 1,
+  "seeds": [
+    1
+  ],
+  "temperature": 0.2,
+  "num_ctx": 8192,
+  "concurrency": 1,
+  "args": {
+    "base": "http://localhost:8000",
+    "ollama": "http://localhost:11434",
+    "models": "qwen2.5-coder:3b",
+    "arms": "A1,A3",
+    "tasks": "T01,T04",
+    "reps": 1,
+    "seed": 1,
+    "temperature": 0.2,
+    "num_ctx": 8192,
+    "run_name": "smoke",
+    "out_root": "F:\\Downloads\\aiopsforge-phase18-eval\\aiopsforge-phase18-eval\\results",
+    "poll": 5,
+    "max_hours": 3.0,
+    "reset_memory_cmd": "docker compose exec -T postgres psql -U aiops -d aiopsforge -c \"TRUNCATE memory_entries, failure_patterns\"",
+    "no_warmup": false,
+    "force": false,
+    "dry_run": false
+  }
+}

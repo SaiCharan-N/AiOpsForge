@@ -27,6 +27,11 @@ class TaskHandler(ABC):
     #: existing parser needs no changes for a new task type.
     qa_tool_name: str = "run_tests"
 
+    def qa_tool_args(self, state: dict, task: Any) -> dict:
+        """Extra arguments for the QA tool call, beyond project_id (e.g.
+        which framework's test runner check_webapp should use)."""
+        return {}
+
     def describe_qa_start(self, state: dict, task: Any) -> str:
         """Human-readable message shown in the live event feed right
         before QA runs this task type's check. Override for task types

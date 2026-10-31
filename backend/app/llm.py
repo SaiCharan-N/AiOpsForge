@@ -25,6 +25,8 @@ import time
 import requests
 
 from app.config import settings
+from app import run_config
+from app.pipeline import metrics
 
 if not settings.langfuse_public_key:
     os.environ.setdefault("LANGFUSE_TRACING_ENABLED", "false")
@@ -39,8 +41,9 @@ class LLMOutputError(Exception):
 @observe(name="ollama-generate", as_type="generation")
 def generate(prompt: str, system: str | None = None, timeout: int = 900) -> str:
     """Sends a single prompt to Ollama and returns the raw text response."""
+    model = run_config.model()   # per-run override (experiments) or the configured default
     payload = {
-        "model": settings.ollama_model,
+        "model": model,
         "prompt": prompt,
         "stream": False,
         # Reuse the already-loaded model across the many back-to-back calls
@@ -52,20 +55,33 @@ def generate(prompt: str, system: str | None = None, timeout: int = 900) -> str:
     }
     if system:
         payload["system"] = system
+    # Phase 18: temperature / seed / context window (per-run override > env default > Ollama default).
+    options = run_config.llm_options()
+    if options:
+        payload["options"] = options
 
     t0 = time.time()
-    response = requests.post(
-        f"{settings.ollama_base_url}/api/generate", json=payload, timeout=timeout
-    )
-    response.raise_for_status()
-    body = response.json()
+    try:
+        response = requests.post(
+            f"{settings.ollama_base_url}/api/generate", json=payload, timeout=timeout
+        )
+        response.raise_for_status()
+        body = response.json()
+    except Exception:
+        # A failed/timed-out call still cost wall time — record it (ok=False), then re-raise.
+        metrics.record_llm(model, (time.time() - t0) * 1000, None, prompt,
+                           system=system, ok=False)
+        raise
     text_out = body.get("response", "").strip()
+    # Token accounting: Ollama reports prompt_eval_count / eval_count and its
+    # own server-side timings in every response; previously only Langfuse saw them.
+    metrics.record_llm(model, (time.time() - t0) * 1000, body, prompt, text_out, system=system)
 
     if settings.langfuse_public_key:
         try:
             client = get_client()
             client.update_current_generation(
-                model=settings.ollama_model,
+                model=model,
                 input=prompt,
                 output=text_out,
                 usage_details={

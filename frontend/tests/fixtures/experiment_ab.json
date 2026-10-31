@@ -1,0 +1,659 @@
+{
+ "experiment": {
+  "experiment_id": "80ff4ae7-8420-49c3-b776-53f53ba58bf3",
+  "name": "communication_mode",
+  "design": "ab",
+  "status": "done",
+  "error": null,
+  "created_at": "2026-10-09 03:28:41.949",
+  "finished_at": "2026-10-09 03:28:42",
+  "total_runs": 30,
+  "finished_runs": 30,
+  "progress": 1.0,
+  "config": {
+   "design": "ab",
+   "preset": "communication_mode",
+   "name": "communication_mode",
+   "alpha": 0.05,
+   "repetitions": 3,
+   "base": {
+    "use_memory": false
+   },
+   "requests": [
+    "a function that checks if a number is prime, with a test",
+    "a function that flattens a nested list, with a test",
+    "a function that removes duplicate items from a list while preserving order, with a test",
+    "a function that reverses a string, with a test",
+    "a function that returns the n-th Fibonacci number, with a test"
+   ],
+   "factor": "communication_mode",
+   "levels": [
+    "blackboard",
+    "message_passing"
+   ],
+   "labels": [
+    "blackboard",
+    "message_passing"
+   ],
+   "baseline": "blackboard",
+   "isolation": [
+    "long-term memory switched OFF in every arm so one arm cannot learn from another"
+   ],
+   "max_concurrency": 5,
+   "total_runs": 30,
+   "environment": {
+    "started_at": "2026-10-09T03:28:41.946924+00:00",
+    "python": "3.12.3",
+    "platform": "Linux-6.18.44-fc-v80-x86_64-with-glibc2.39",
+    "default_model": "qwen2.5-coder:3b",
+    "embedding_model": "nomic-embed-text",
+    "ollama_base_url": "http://localhost:11434",
+    "default_max_qa_attempts": 3,
+    "memory_similarity_threshold": 0.75,
+    "memory_top_k": 3,
+    "failure_similarity_threshold": 0.65,
+    "batch_max_concurrency": 5
+   }
+  },
+  "arms": [
+   {
+    "batch_id": "0689af67-a1ae-43bf-af96-7f9bba229f16",
+    "level": "blackboard",
+    "status": "done",
+    "total": 15,
+    "finished": 15,
+    "passed": 15,
+    "needs_review": 0,
+    "errors": 0
+   },
+   {
+    "batch_id": "1847ed86-6104-4608-b75c-99e9945b9c06",
+    "level": "message_passing",
+    "status": "done",
+    "total": 15,
+    "finished": 15,
+    "passed": 15,
+    "needs_review": 0,
+    "errors": 0
+   }
+  ]
+ },
+ "result": {
+  "design": "ab",
+  "factor": "communication_mode",
+  "baseline": "blackboard",
+  "arms": [
+   {
+    "label": "blackboard",
+    "batch_id": "0689af67-a1ae-43bf-af96-7f9bba229f16",
+    "n": 15,
+    "errors": 0,
+    "passed": 15,
+    "cancelled": 0,
+    "metrics": {
+     "tokens_total": {
+      "n": 15,
+      "mean": 220.73333333333332,
+      "sd": 6.485882103975269,
+      "sem": 1.6746475582773959,
+      "median": 220.0,
+      "min": 211.0,
+      "max": 233.0
+     },
+     "total_ms": {
+      "n": 15,
+      "mean": 2499.0666666666666,
+      "sd": 40.33868520179511,
+      "sem": 10.415403732963735,
+      "median": 2506.0,
+      "min": 2435.0,
+      "max": 2569.0
+     },
+     "est_cost_usd": {
+      "n": 15,
+      "mean": 0.00021106666666666666,
+      "sd": 9.647106647418526e-06,
+      "sem": 2.490872225635921e-06,
+      "median": 0.00021,
+      "min": 0.000197,
+      "max": 0.000229
+     },
+     "avg_attempts": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     },
+     "ifs_avg": {
+      "n": 15,
+      "mean": 0.8,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.8,
+      "min": 0.8,
+      "max": 0.8
+     },
+     "pass": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     }
+    },
+    "est_cost_usd_total": 0.003166
+   },
+   {
+    "label": "message_passing",
+    "batch_id": "1847ed86-6104-4608-b75c-99e9945b9c06",
+    "n": 15,
+    "errors": 0,
+    "passed": 15,
+    "cancelled": 0,
+    "metrics": {
+     "tokens_total": {
+      "n": 15,
+      "mean": 282.06666666666666,
+      "sd": 5.202563470700445,
+      "sem": 1.3432961119739921,
+      "median": 283.0,
+      "min": 272.0,
+      "max": 288.0
+     },
+     "total_ms": {
+      "n": 15,
+      "mean": 2830.9333333333334,
+      "sd": 61.09531974904539,
+      "sem": 15.774743727951325,
+      "median": 2840.0,
+      "min": 2705.0,
+      "max": 2922.0
+     },
+     "est_cost_usd": {
+      "n": 15,
+      "mean": 0.00030333333333333335,
+      "sd": 7.880053178452414e-06,
+      "sem": 2.0346209818250014e-06,
+      "median": 0.000305,
+      "min": 0.000288,
+      "max": 0.000312
+     },
+     "avg_attempts": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     },
+     "ifs_avg": {
+      "n": 15,
+      "mean": 0.8,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.8,
+      "min": 0.8,
+      "max": 0.8
+     },
+     "pass": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     }
+    },
+    "est_cost_usd_total": 0.00455
+   }
+  ],
+  "comparisons": {
+   "tokens_total": {
+    "kind": "continuous",
+    "baseline": "blackboard",
+    "alpha": 0.05,
+    "comparisons": [
+     {
+      "level": "message_passing",
+      "primary": {
+       "test": "welch_t",
+       "n_a": 15,
+       "n_b": 15,
+       "t": 28.569224326048698,
+       "df": 26.74111229722361,
+       "p": 1.4237726371047944e-21,
+       "mean_a": 220.73333333333332,
+       "mean_b": 282.06666666666666,
+       "diff": 61.33333333333334,
+       "ci95": [
+        56.92640104482092,
+        65.74026562184577
+       ],
+       "cohens_d": 10.4320057425348,
+       "effect": "large",
+       "note": null
+      },
+      "secondary": {
+       "test": "mann_whitney_u",
+       "n_a": 15,
+       "n_b": 15,
+       "u": 0.0,
+       "p": 3.299478730507273e-06,
+       "median_a": 220.0,
+       "median_b": 283.0,
+       "rank_biserial": 1.0,
+       "note": "normal approximation; rough for n < 8 per group"
+      },
+      "p": 1.4237726371047944e-21,
+      "effect": {
+       "diff": 61.33333333333334,
+       "ci95": [
+        56.92640104482092,
+        65.74026562184577
+       ],
+       "cohens_d": 10.4320057425348,
+       "label": "large"
+      },
+      "n_baseline": 15,
+      "n": 15,
+      "low_power": false,
+      "p_adjusted": 1.4237726371047944e-21,
+      "significant": true,
+      "pct_change": 27.786167321051046
+     }
+    ],
+    "groups": {
+     "blackboard": {
+      "n": 15,
+      "mean": 220.73333333333332,
+      "sd": 6.485882103975269,
+      "sem": 1.6746475582773959,
+      "median": 220.0,
+      "min": 211.0,
+      "max": 233.0
+     },
+     "message_passing": {
+      "n": 15,
+      "mean": 282.06666666666666,
+      "sd": 5.202563470700445,
+      "sem": 1.3432961119739921,
+      "median": 283.0,
+      "min": 272.0,
+      "max": 288.0
+     }
+    }
+   },
+   "total_ms": {
+    "kind": "continuous",
+    "baseline": "blackboard",
+    "alpha": 0.05,
+    "comparisons": [
+     {
+      "level": "message_passing",
+      "primary": {
+       "test": "welch_t",
+       "n_a": 15,
+       "n_b": 15,
+       "t": 17.55630193702495,
+       "df": 24.257049280130545,
+       "p": 2.697350571278318e-15,
+       "mean_a": 2499.0666666666666,
+       "mean_b": 2830.9333333333334,
+       "diff": 331.8666666666668,
+       "ci95": [
+        292.8746713496281,
+        370.8586619837055
+       ],
+       "cohens_d": 6.410655064853472,
+       "effect": "large",
+       "note": null
+      },
+      "secondary": {
+       "test": "mann_whitney_u",
+       "n_a": 15,
+       "n_b": 15,
+       "u": 0.0,
+       "p": 3.3833394126542276e-06,
+       "median_a": 2506.0,
+       "median_b": 2840.0,
+       "rank_biserial": 1.0,
+       "note": "normal approximation; rough for n < 8 per group"
+      },
+      "p": 2.697350571278318e-15,
+      "effect": {
+       "diff": 331.8666666666668,
+       "ci95": [
+        292.8746713496281,
+        370.8586619837055
+       ],
+       "cohens_d": 6.410655064853472,
+       "label": "large"
+      },
+      "n_baseline": 15,
+      "n": 15,
+      "low_power": false,
+      "p_adjusted": 2.697350571278318e-15,
+      "significant": true,
+      "pct_change": 13.279624393106765
+     }
+    ],
+    "groups": {
+     "blackboard": {
+      "n": 15,
+      "mean": 2499.0666666666666,
+      "sd": 40.33868520179511,
+      "sem": 10.415403732963735,
+      "median": 2506.0,
+      "min": 2435.0,
+      "max": 2569.0
+     },
+     "message_passing": {
+      "n": 15,
+      "mean": 2830.9333333333334,
+      "sd": 61.09531974904539,
+      "sem": 15.774743727951325,
+      "median": 2840.0,
+      "min": 2705.0,
+      "max": 2922.0
+     }
+    }
+   },
+   "est_cost_usd": {
+    "kind": "continuous",
+    "baseline": "blackboard",
+    "alpha": 0.05,
+    "comparisons": [
+     {
+      "level": "message_passing",
+      "primary": {
+       "test": "welch_t",
+       "n_a": 15,
+       "n_b": 15,
+       "t": 28.68784392216553,
+       "df": 26.927141316631158,
+       "p": 1.0113399279089309e-21,
+       "mean_a": 0.00021106666666666666,
+       "mean_b": 0.00030333333333333335,
+       "diff": 9.22666666666667e-05,
+       "ci95": [
+        8.56666749018027e-05,
+        9.886665843153069e-05
+       ],
+       "cohens_d": 10.475319494905026,
+       "effect": "large",
+       "note": null
+      },
+      "secondary": {
+       "test": "mann_whitney_u",
+       "n_a": 15,
+       "n_b": 15,
+       "u": 0.0,
+       "p": 3.299478730507273e-06,
+       "median_a": 0.00021,
+       "median_b": 0.000305,
+       "rank_biserial": 1.0,
+       "note": "normal approximation; rough for n < 8 per group"
+      },
+      "p": 1.0113399279089309e-21,
+      "effect": {
+       "diff": 9.22666666666667e-05,
+       "ci95": [
+        8.56666749018027e-05,
+        9.886665843153069e-05
+       ],
+       "cohens_d": 10.475319494905026,
+       "label": "large"
+      },
+      "n_baseline": 15,
+      "n": 15,
+      "low_power": false,
+      "p_adjusted": 1.0113399279089309e-21,
+      "significant": true,
+      "pct_change": 43.71446620341126
+     }
+    ],
+    "groups": {
+     "blackboard": {
+      "n": 15,
+      "mean": 0.00021106666666666666,
+      "sd": 9.647106647418526e-06,
+      "sem": 2.490872225635921e-06,
+      "median": 0.00021,
+      "min": 0.000197,
+      "max": 0.000229
+     },
+     "message_passing": {
+      "n": 15,
+      "mean": 0.00030333333333333335,
+      "sd": 7.880053178452414e-06,
+      "sem": 2.0346209818250014e-06,
+      "median": 0.000305,
+      "min": 0.000288,
+      "max": 0.000312
+     }
+    }
+   },
+   "avg_attempts": {
+    "kind": "continuous",
+    "baseline": "blackboard",
+    "alpha": 0.05,
+    "comparisons": [
+     {
+      "level": "message_passing",
+      "primary": {
+       "test": "welch_t",
+       "n_a": 15,
+       "n_b": 15,
+       "t": null,
+       "df": null,
+       "p": 1.0,
+       "mean_a": 1.0,
+       "mean_b": 1.0,
+       "diff": 0.0,
+       "ci95": null,
+       "cohens_d": null,
+       "effect": null,
+       "note": "identical values"
+      },
+      "secondary": {
+       "test": "mann_whitney_u",
+       "n_a": 15,
+       "n_b": 15,
+       "u": 112.5,
+       "p": 1.0,
+       "median_a": 1.0,
+       "median_b": 1.0,
+       "rank_biserial": 0.0,
+       "note": "normal approximation; rough for n < 8 per group"
+      },
+      "p": 1.0,
+      "effect": {
+       "diff": 0.0,
+       "ci95": null,
+       "cohens_d": null,
+       "label": null
+      },
+      "n_baseline": 15,
+      "n": 15,
+      "low_power": false,
+      "p_adjusted": 1.0,
+      "significant": false,
+      "pct_change": 0.0
+     }
+    ],
+    "groups": {
+     "blackboard": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     },
+     "message_passing": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     }
+    }
+   },
+   "ifs_avg": {
+    "kind": "continuous",
+    "baseline": "blackboard",
+    "alpha": 0.05,
+    "comparisons": [
+     {
+      "level": "message_passing",
+      "primary": {
+       "test": "welch_t",
+       "n_a": 15,
+       "n_b": 15,
+       "t": null,
+       "df": null,
+       "p": 1.0,
+       "mean_a": 0.8,
+       "mean_b": 0.8,
+       "diff": 0.0,
+       "ci95": null,
+       "cohens_d": null,
+       "effect": null,
+       "note": "identical values"
+      },
+      "secondary": {
+       "test": "mann_whitney_u",
+       "n_a": 15,
+       "n_b": 15,
+       "u": 112.5,
+       "p": 1.0,
+       "median_a": 0.8,
+       "median_b": 0.8,
+       "rank_biserial": 0.0,
+       "note": "normal approximation; rough for n < 8 per group"
+      },
+      "p": 1.0,
+      "effect": {
+       "diff": 0.0,
+       "ci95": null,
+       "cohens_d": null,
+       "label": null
+      },
+      "n_baseline": 15,
+      "n": 15,
+      "low_power": false,
+      "p_adjusted": 1.0,
+      "significant": false,
+      "pct_change": 0.0
+     }
+    ],
+    "groups": {
+     "blackboard": {
+      "n": 15,
+      "mean": 0.8,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.8,
+      "min": 0.8,
+      "max": 0.8
+     },
+     "message_passing": {
+      "n": 15,
+      "mean": 0.8,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.8,
+      "min": 0.8,
+      "max": 0.8
+     }
+    }
+   },
+   "pass": {
+    "kind": "binary",
+    "baseline": "blackboard",
+    "alpha": 0.05,
+    "comparisons": [
+     {
+      "level": "message_passing",
+      "primary": {
+       "test": "fisher_exact",
+       "n_a": 15,
+       "n_b": 15,
+       "rate_a": 1.0,
+       "rate_b": 1.0,
+       "diff": 0.0,
+       "odds_ratio": null,
+       "p": 1.0,
+       "note": null
+      },
+      "secondary": null,
+      "p": 1.0,
+      "effect": {
+       "diff": 0.0,
+       "odds_ratio": null
+      },
+      "n_baseline": 15,
+      "n": 15,
+      "low_power": false,
+      "p_adjusted": 1.0,
+      "significant": false,
+      "pct_change": null
+     }
+    ],
+    "groups": {
+     "blackboard": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     },
+     "message_passing": {
+      "n": 15,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     }
+    }
+   }
+  },
+  "metric_labels": {
+   "tokens_total": "Tokens",
+   "total_ms": "Latency (ms)",
+   "est_cost_usd": "Est. cost (USD)",
+   "avg_attempts": "Attempts per task",
+   "ifs_avg": "Instruction fidelity (IFS)",
+   "pass": "Run passed"
+  },
+  "verdict": [
+   "message_passing vs blackboard: Tokens +27.8% (significant, Holm p=1.42e-21, d=10.43 large)",
+   "message_passing vs blackboard: Latency (ms) +13.3% (significant, Holm p=2.7e-15, d=6.41 large)",
+   "message_passing vs blackboard: Est. cost (USD) +43.7% (significant, Holm p=1.01e-21, d=10.48 large)",
+   "message_passing vs blackboard: Attempts per task +0.0% (not significant, Holm p=1)",
+   "message_passing vs blackboard: Instruction fidelity (IFS) +0.0% (not significant, Holm p=1)",
+   "message_passing vs blackboard: run passed 100% \u2192 100% (not significant, Fisher p=1, Holm p=1)"
+  ],
+  "warnings": [
+   "runs executed 5 at a time: latency includes queueing for the model at that concurrency",
+   "arms ran one after another in the given order; repeat with the levels reversed to check for an order effect"
+  ],
+  "design_notes": [
+   "long-term memory switched OFF in every arm so one arm cannot learn from another"
+  ]
+ }
+}

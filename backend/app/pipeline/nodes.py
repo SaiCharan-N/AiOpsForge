@@ -16,6 +16,7 @@ type without touching this file.
 import asyncio
 import json
 import logging
+import re
 import time
 from pathlib import Path
 
@@ -23,10 +24,12 @@ from app.config import settings
 from app.mcp_client import call_tool
 from app.pipeline import event_types as ev
 from app.pipeline.task_handlers import get_task_handler
-from app.schemas import Task, TestResult
-from app.agents import planner, qa, failure_analyzer
+from app.schemas import Task, TestResult, FailureContext, ExecutionContext
+from app.agents import planner, qa, failure_analyzer, failure_parser
+from app import run_config
+from app.pipeline import intervention, metrics
 from app.agents.qa_deterministic import run_deterministic_qa
-from app import db, events, memory, short_term_memory as stm
+from app import db, events, ifs, memory, short_term_memory as stm
 
 logger = logging.getLogger("aiopsforge.pipeline.nodes")
 
@@ -62,6 +65,62 @@ def _save_memory_safe(project_id: str, problem_signature: str, solution_summary:
         logger.warning("failed to save memory entry, continuing: %s", exc)
 
 
+def _save_failure_pattern_safe(project_id: str, ctx: dict, fix_suggestion: str, fix_diff: str,
+                                task_type: str) -> None:
+    """Best-effort: record that a failure with this signature was fixed, and how."""
+    try:
+        memory.save_failure_pattern(
+            project_id, ctx["error_type"], ctx["error_category"], ctx["signature"],
+            ctx.get("message", ""), ctx.get("code_location", ""), fix_suggestion, fix_diff, task_type,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("failed to save failure pattern, continuing: %s", exc)
+
+
+def _capture_failure(state: dict, result: TestResult, task_type: str, qa_tool: str,
+                     deterministic: bool, duration_ms: int, raw: str = "") -> FailureContext:
+    """Parses a QA failure into a FailureContext + ExecutionContext and
+    stores both on the state (`_failure_context`, `_execution_context`).
+
+    This is the "capture the full execution context at failure time" step:
+    the FULL QA output is parsed here (not the 8-line truncated `error`
+    summary the Developer used to get), including pytest's per-frame local
+    variables, so the Failure Analyzer, the retry prompt, the live UI and
+    long-term memory all work from the same structured record. Never
+    raises — worst case is a generic context built from the error text.
+    """
+    full_output = result.output or result.error or ""
+    ctx = failure_parser.parse_failure(
+        full_output,
+        project_id=state["project_id"], workspace_root=settings.workspace_root,
+        code_filename=state.get("code_filename"),
+        code=state.get("code") if task_type == "code" else None,
+        deterministic=deterministic,
+    )
+    exit_match = re.search(r"EXIT_CODE:\s*(-?\d+)", raw or "")
+    tb = ""
+    for f in ctx.frames[-4:]:
+        tb += f"{f.file}:{f.line} in {f.function}" + (f"\n    {f.source}" if f.source else "") + "\n"
+    exec_ctx = ExecutionContext(
+        task_type=task_type, qa_tool=qa_tool, deterministic=deterministic,
+        filename=state.get("code_filename"), attempt=state["attempt_count"] + 1,
+        model=run_config.model(),
+        exit_code=int(exit_match.group(1)) if exit_match else None,
+        duration_ms=duration_ms, output_tail=full_output[-2000:],
+        traceback=tb.strip(), variables=ctx.variables,
+    )
+    state["_failure_context"] = ctx.model_dump()
+    state["_execution_context"] = exec_ctx.model_dump()
+    return ctx
+
+
+def _failure_summary(ctx: FailureContext) -> dict:
+    return {
+        "error_type": ctx.error_type, "category": ctx.error_category,
+        "location": ctx.code_location, "message": ctx.message[:200], "phase": ctx.phase,
+    }
+
+
 # ---------------------------------------------------------------- nodes ----
 
 async def planner_node(state: dict) -> dict:
@@ -70,13 +129,23 @@ async def planner_node(state: dict) -> dict:
         state["project_id"], ev.PLANNER_START, "planner",
         "Reading your request and breaking it into tasks…",
     )
-    tasks = await asyncio.to_thread(planner.plan, state["request"])
+    # User intervention: if the user asked for a different plan at the plan
+    # review, their guidance is passed to the Planner on the re-run.
+    tasks = await asyncio.to_thread(
+        planner.plan, state["request"], intervention.guidance_for(state) or None, state.get("framework_choice"))
     state["task_list"] = [t.model_dump() for t in tasks]
+    # The run's framework: what the Planner resolved (explicit choice > detected > fastapi for web apps).
+    state["framework"] = next((t.framework for t in tasks if t.framework), None)
     state["task_index"] = 0
     state["current_task"] = state["task_list"][0] if state["task_list"] else None
     state["attempt_count"] = 0
+    # Phase 18: stage-level IFS for the Planner — how much of the request's technical detail
+    # survives into the task descriptions the Developer will receive (message-passing mode
+    # sees ONLY these). Re-plans record again; reports use the latest.
+    plan_ifs = ifs.record_ifs("planner", state["request"], "\n".join(t.description for t in tasks), state=state)
     duration_ms = int((time.time() - t0) * 1000)
-    logger.info("planner: %d task(s) in %.1fs", len(tasks), duration_ms / 1000)
+    logger.info("planner: %d task(s) in %.1fs [ifs=%s]", len(tasks), duration_ms / 1000,
+                None if plan_ifs is None else round(plan_ifs["score"], 3))
     _log_run_safe(
         state["project_id"], "planner",
         {"request": state["request"]},
@@ -90,12 +159,16 @@ async def planner_node(state: dict) -> dict:
             db.upsert_task(state["project_id"], t.order, t.description, "pending", task_type=t.type)
         except Exception as exc:  # noqa: BLE001
             logger.warning("failed to upsert pending task %d: %s", t.order, exc)
+    try:  # a re-plan can be shorter than the plan it replaces; drop the stale rows
+        db.delete_tasks_after(state["project_id"], len(tasks))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("failed to prune stale tasks: %s", exc)
 
     plan_lines = "\n".join(f"{t.order}. {t.description}" for t in tasks)
     await events.emit(
         state["project_id"], ev.PLANNER_DONE, "planner",
         f"Planned {len(tasks)} task(s):\n{plan_lines}",
-        {"tasks": [t.model_dump() for t in tasks], "duration_ms": duration_ms},
+        {"tasks": [t.model_dump() for t in tasks], "duration_ms": duration_ms, "framework": state["framework"]},
     )
     return state
 
@@ -239,36 +312,39 @@ async def qa_node(state: dict) -> dict:
         # that doesn't even compile/import. This IS the QA result — it goes
         # through the normal retry/escalate accounting below, same as a
         # real test failure would.
-        await events.emit(
-            state["project_id"], ev.QA_RESULT, "qa",
-            f"Deterministic pre-flight check failed: {det_msg}",
-            {"passed": False, "deterministic": True},
-        )
         result = TestResult(passed=False, output=det_msg, error=det_msg)
         state["test_result"] = result.model_dump()
         duration_ms = int((time.time() - t0) * 1000)
+        fctx = _capture_failure(state, result, task_type, handler.qa_tool_name, True, duration_ms)
+        await events.emit(
+            state["project_id"], ev.QA_RESULT, "qa",
+            f"Deterministic pre-flight check failed: {fctx.error_type} at {fctx.code_location or 'the file'}: "
+            f"{fctx.message[:160] or det_msg[:160]}",
+            {"passed": False, "deterministic": True, "failure": _failure_summary(fctx)},
+        )
         _log_run_safe(
             state["project_id"], "qa",
             {"task": state["current_task"]["description"], "attempt": state["attempt_count"] + 1},
-            {"passed": False, "error": det_msg, "deterministic": True},
+            {"passed": False, "error": det_msg, "deterministic": True, "failure": _failure_summary(fctx)},
             status="error",
             duration_ms=duration_ms,
         )
-        if state["attempt_count"] + 1 >= settings.max_qa_attempts:
+        if state["attempt_count"] + 1 >= run_config.max_qa_attempts():
             state["_qa_decision"] = "escalate"
         else:
             state["attempt_count"] += 1
             state["_qa_decision"] = "analyze_failure"
             await events.emit(
                 state["project_id"], ev.FAILURE_ANALYSIS_START, "system",
-                f"Sending failure to Failure Analyzer before retry (attempt {state['attempt_count'] + 1}/{settings.max_qa_attempts}).",
-                {"attempt": state["attempt_count"] + 1, "max_attempts": settings.max_qa_attempts},
+                f"Sending failure to Failure Analyzer before retry (attempt {state['attempt_count'] + 1}/{run_config.max_qa_attempts()}).",
+                {"attempt": state["attempt_count"] + 1, "max_attempts": run_config.max_qa_attempts()},
             )
         return state
 
     logger.info("deterministic pre-flight passed: %s — running real test suite", det_msg)
 
-    raw = await call_tool(handler.qa_tool_name, {"project_id": state["project_id"]})
+    raw = await call_tool(
+        handler.qa_tool_name, {"project_id": state["project_id"], **handler.qa_tool_args(state, state["current_task"])})
     result = qa.parse_run_tests_output(raw)
     state["test_result"] = result.model_dump()
     duration_ms = int((time.time() - t0) * 1000)
@@ -276,17 +352,27 @@ async def qa_node(state: dict) -> dict:
         "qa: task %d attempt %d -> passed=%s (%.1fs)",
         state["current_task"]["order"], state["attempt_count"] + 1, result.passed, duration_ms / 1000,
     )
+    fctx = None
+    if not result.passed:
+        fctx = _capture_failure(state, result, task_type, handler.qa_tool_name, False, duration_ms, raw)
     _log_run_safe(
         state["project_id"], "qa",
         {"task": state["current_task"]["description"], "attempt": state["attempt_count"] + 1},
-        {"passed": result.passed, "error": result.error},
+        {"passed": result.passed, "error": result.error,
+         **({"failure": _failure_summary(fctx)} if fctx else {})},
         status="ok" if result.passed else "error",
         duration_ms=duration_ms,
     )
+    if result.passed:
+        qa_message = "Tests passed."
+    elif fctx.code_location or fctx.message:
+        qa_message = f"Tests failed: {fctx.error_type} at {fctx.code_location or 'unknown location'}: {fctx.message[:160]}"
+    else:
+        qa_message = f"Tests failed: {result.error}"
     await events.emit(
-        state["project_id"], ev.QA_RESULT, "qa",
-        "Tests passed." if result.passed else f"Tests failed: {result.error}",
-        {"passed": result.passed, "error": result.error, "duration_ms": duration_ms},
+        state["project_id"], ev.QA_RESULT, "qa", qa_message,
+        {"passed": result.passed, "error": result.error, "duration_ms": duration_ms,
+         **({"failure": _failure_summary(fctx)} if fctx else {})},
     )
 
     # Values here are the exact edge keys registered in add_conditional_edges
@@ -303,7 +389,7 @@ async def qa_node(state: dict) -> dict:
         analysis = state.get("_failure_analysis") or {}
         exec_context = {
             "files_changed": [state.get("code_filename")],
-            "model": settings.ollama_model,
+            "model": run_config.model(),
             "task_type": task_type,
             "attempt_count": state["attempt_count"] + 1,
             "outcome": "passed",
@@ -313,7 +399,27 @@ async def qa_node(state: dict) -> dict:
             ),
             "root_cause": analysis.get("root_cause"),
             "repair_strategy": analysis.get("repair_strategy"),
+            # Failure Recovery: the structured record of what was fixed.
+            "error_type": analysis.get("error_type") if state["attempt_count"] > 0 else None,
+            "error_category": analysis.get("error_category") if state["attempt_count"] > 0 else None,
+            "code_location": analysis.get("code_location") if state["attempt_count"] > 0 else None,
+            "repeat_errors": sum(1 for h in state.get("_failure_history", []) if h.get("repeat")),
         }
+
+        # A retry that just PASSED resolved the last recorded failure — store
+        # that failure pattern together with what changed, so the next
+        # analysis of a similar error can say how it was fixed before.
+        prior_ctx = state.get("_failure_context")
+        if state["attempt_count"] > 0 and prior_ctx:
+            fix_suggestion, fix_diff = failure_analyzer.summarize_fix(
+                state.get("_prev_code") if task_type == "code" else None,
+                state.get("code") if task_type == "code" else None,
+                analysis.get("hint", ""),
+            )
+            await asyncio.to_thread(
+                _save_failure_pattern_safe, state["project_id"], prior_ctx,
+                fix_suggestion, fix_diff, task_type,
+            )
         await asyncio.to_thread(
             memory.save_memory,
             state["project_id"],
@@ -321,15 +427,15 @@ async def qa_node(state: dict) -> dict:
             f"Working solution ({state.get('code_filename', 'file')}):\n{state.get('code', '')[:1000]}",
             execution_context=exec_context,
         )
-    elif state["attempt_count"] + 1 >= settings.max_qa_attempts:
+    elif state["attempt_count"] + 1 >= run_config.max_qa_attempts():
         state["_qa_decision"] = "escalate"
     else:
         state["attempt_count"] += 1
         state["_qa_decision"] = "analyze_failure"  # Phase 11: go to analyzer
         await events.emit(
             state["project_id"], ev.FAILURE_ANALYSIS_START, "system",
-            f"Sending failure to Failure Analyzer before retry (attempt {state['attempt_count'] + 1}/{settings.max_qa_attempts}).",
-            {"attempt": state["attempt_count"] + 1, "max_attempts": settings.max_qa_attempts},
+            f"Sending failure to Failure Analyzer before retry (attempt {state['attempt_count'] + 1}/{run_config.max_qa_attempts()}).",
+            {"attempt": state["attempt_count"] + 1, "max_attempts": run_config.max_qa_attempts()},
         )
 
     return state
@@ -349,6 +455,7 @@ async def next_task_node(state: dict) -> dict:
         f"Task {task['order']} finished: {final_status}.",
         {"task_order": task["order"], "status": final_status},
     )
+    metrics.record_task(state, task, final_status, state["attempt_count"] + 1)
     state["task_history"].append(
         {
             "task": task["description"],
@@ -360,6 +467,13 @@ async def next_task_node(state: dict) -> dict:
             "memory_used": state.get("memory_used", False),
             "communication_mode": state.get("communication_mode", "blackboard"),
             "ifs_score": state.get("ifs_score"),
+            "ifs_strict": state.get("ifs_strict"),
+            # Failure Recovery metrics — what makes "retries hitting the same
+            # error again" measurable per task (repeated_errors / failures).
+            "failures": len(state.get("_failure_history", [])),
+            "repeated_errors": sum(1 for h in state.get("_failure_history", []) if h.get("repeat")),
+            "failure_categories": [h.get("category") for h in state.get("_failure_history", [])],
+            "used_similar_fix": any(h.get("used_similar_fix") for h in state.get("_failure_history", [])),
         }
     )
     try:
@@ -373,7 +487,15 @@ async def next_task_node(state: dict) -> dict:
     state["_last_escalated"] = False
     state["memory_used"] = False
     state["ifs_score"] = None
+    state["ifs_strict"] = None
     state["_failure_analysis"] = None
+    state["_failure_context"] = None
+    state["_execution_context"] = None
+    state["_failure_history"] = []
+    state["_prev_code"] = None
+    state["_skipped_by_user"] = False
+    state["_user_skip"] = False
+    state["_guided_regen"] = False
 
     state["task_index"] += 1
     state["attempt_count"] = 0
@@ -392,49 +514,93 @@ async def next_task_node(state: dict) -> dict:
 
 
 async def failure_analyzer_node(state: dict) -> dict:
-    """Phase 11: Analyzes a QA failure to determine a targeted repair strategy.
-    Runs after QA fails but before retry, so Developer can do focused fixes.
+    """Failure Recovery: turns the FailureContext qa_node captured into a
+    repair plan for the Developer's retry — exact location, variable state,
+    a specific hint, similar past fixes from memory, and a repeat-error
+    flag if the previous attempt hit the same error (see
+    app.agents.failure_analyzer).
+
+    The "analysis starting" event is emitted by qa_node (FAILURE_ANALYSIS_START,
+    which lights the analyzer in the flow diagram); this node emits only
+    FAILURE_ANALYSIS_DONE. It used to reuse DEVELOPER_RETRY / RETRY_SCHEDULED,
+    which made the diagram highlight the Developer during analysis and
+    never light the analyzer -> developer edge.
     """
     t0 = time.time()
     result = TestResult(**state["test_result"])
-    
-    await events.emit(
-        state["project_id"], ev.DEVELOPER_RETRY, "failure_analyzer",
-        f"Analyzing failure for task {state['current_task']['order']} (attempt {state['attempt_count']})...",
-        {"error": result.error},
-    )
-    
+    ctx = FailureContext(**state["_failure_context"]) if state.get("_failure_context") else None
+    history = list(state.get("_failure_history") or [])
+    task_type = state["current_task"].get("type", "code")
+
     analysis = await asyncio.to_thread(
         failure_analyzer.analyze_failure,
         result,
-        code_filename=state.get("code_filename"),
+        state.get("code_filename"),
+        context=ctx,
+        history=history,
+        project_id=state["project_id"],
+        task_type=task_type,
+        code=state.get("code") if task_type == "code" else None,
     )
-    
-    state["_failure_analysis"] = analysis
+
+    history.append({
+        "attempt": state["attempt_count"],
+        "signature": analysis.get("signature"),
+        "error_type": analysis.get("error_type"),
+        "category": analysis.get("error_category"),
+        "code_location": analysis.get("code_location"),
+        "hint": analysis.get("hint"),
+        "repeat": analysis.get("repeat_error", False),
+        "used_similar_fix": bool(analysis.get("similar_fixes")),
+    })
+    state["_failure_history"] = history
+    # Phase 18 ablation: with failure_recovery off the analysis above still feeds the
+    # metrics (history -> repeated_errors, failure_categories) but the Developer's
+    # retry prompt gets only the raw QA error, exactly as before Phase 12.
+    state["_failure_analysis"] = analysis if run_config.failure_recovery_enabled() else None
     duration_ms = int((time.time() - t0) * 1000)
-    
+
     logger.info(
-        "failure analysis: file=%s strategy=%s similar=%d (%.1fs)",
-        analysis.get("failed_file"), analysis.get("repair_strategy"),
+        "failure analysis: task %d attempt %d -> %s/%s at %s repeat=%s similar=%d (%.1fs)",
+        state["current_task"]["order"], state["attempt_count"], analysis.get("error_type"),
+        analysis.get("error_category"), analysis.get("code_location"), analysis.get("repeat_error"),
         len(analysis.get("similar_fixes", [])), duration_ms / 1000,
     )
-    
-    hint = analysis.get("hint", "")
-    similar_count = len(analysis.get("similar_fixes", []))
-    msg = f"Failed file: {analysis.get('failed_file')}\n{hint}"
-    if similar_count > 0:
-        msg += f"\nFound {similar_count} similar fix(es) in memory."
-    
+    _log_run_safe(
+        state["project_id"], "failure_analyzer",
+        {"task": state["current_task"]["description"], "attempt": state["attempt_count"]},
+        {k: analysis.get(k) for k in (
+            "error_type", "error_category", "code_location", "repair_strategy", "repeat_error",
+            "hint_confidence", "llm_used", "signature")}
+        | {"similar_fixes": len(analysis.get("similar_fixes", []))},
+        duration_ms=duration_ms,
+    )
+
+    similar = analysis.get("similar_fixes", [])
+    lines = [f"{analysis.get('error_type')} ({analysis.get('error_category')}) at "
+             f"{analysis.get('code_location') or analysis.get('failed_file')}"]
+    if analysis.get("repeat_error"):
+        lines.append("⚠ Same error as the previous attempt — that fix didn't work.")
+    lines.append(f"Fix: {analysis.get('hint', '')}")
+    if similar:
+        lines.append(f"🧠 {len(similar)} similar past fix(es) found in memory.")
+    slim = {k: analysis.get(k) for k in (
+        "error_type", "error_category", "code_location", "line", "hint", "root_cause",
+        "repair_strategy", "repeat_error", "repeat_count", "signature", "hint_confidence",
+        "llm_used", "variables")}
+    slim["similar_fixes"] = [
+        {k: f.get(k) for k in ("error_type", "code_location", "fix_suggestion", "similarity", "times_seen")}
+        for f in similar
+    ]
     await events.emit(
-        state["project_id"], ev.RETRY_SCHEDULED, "failure_analyzer",
-        msg,
+        state["project_id"], ev.FAILURE_ANALYSIS_DONE, "failure_analyzer",
+        "\n".join(lines),
         {
-            "analysis": analysis,
-            "similar_fixes": similar_count,
+            "analysis": slim, "similar_fixes": len(similar),
+            "snippet": analysis.get("snippet", ""), "filename": analysis.get("failed_file"),
             "duration_ms": duration_ms,
         },
     )
-    
     return state
 
 
@@ -447,11 +613,15 @@ async def escalate_node(state: dict) -> dict:
         "escalate: task %d needs human review after %d attempts",
         state["current_task"]["order"], state["attempt_count"] + 1,
     )
+    by_user = bool(state.get("_skipped_by_user"))
     await events.emit(
         state["project_id"], ev.ESCALATE, "system",
-        f"Task {state['current_task']['order']} needs human review after "
-        f"{state['attempt_count'] + 1} failed attempts.",
-        {"task_order": state["current_task"]["order"], "attempts": state["attempt_count"] + 1},
+        (f"Task {state['current_task']['order']} skipped at your request — flagged for human review."
+         if by_user else
+         f"Task {state['current_task']['order']} needs human review after "
+         f"{state['attempt_count'] + 1} failed attempts."),
+        {"task_order": state["current_task"]["order"], "attempts": state["attempt_count"] + 1,
+         "skipped_by_user": by_user},
     )
     state["needs_human_review"] = True
     state["_last_escalated"] = True
@@ -467,6 +637,12 @@ def route_after_qa(state: dict) -> str:
     Phase 11: Routes to 'analyze_failure' for targeted repair before retry.
     """
     return state["_qa_decision"]
+
+
+def route_after_analyzer(state: dict) -> str:
+    """After failure analysis the Developer retries — unless the user chose
+    to skip this task at the qa_failure pause point."""
+    return "escalate" if state.pop("_user_skip", False) else "developer"
 
 
 def route_after_next_task(state: dict) -> str:

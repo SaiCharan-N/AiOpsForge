@@ -54,4 +54,14 @@ RETRY_SCHEDULED: Final[str] = "retry_scheduled"
 ESCALATE: Final[str] = "escalate"
 TASK_COMPLETE: Final[str] = "task_complete"
 PIPELINE_START: Final[str] = "pipeline_start"
+
+# --- User intervention (app.pipeline.intervention) ---
+# PAUSE_REQUESTED  the user asked to pause at the next boundary (POST .../intervention)
+# PIPELINE_PAUSED  the run is parked waiting for feedback (data: point, question, options, payload, timeout_s)
+# PIPELINE_RESUMED the user answered (or the pause timed out): data: action, guidance, waited_ms, source
+# PLAN_REVISED     the user edited the task list directly
+PAUSE_REQUESTED: Final[str] = "pause_requested"
+PIPELINE_PAUSED: Final[str] = "pipeline_paused"
+PIPELINE_RESUMED: Final[str] = "pipeline_resumed"
+PLAN_REVISED: Final[str] = "plan_revised"
 PIPELINE_DONE: Final[str] = "pipeline_done"

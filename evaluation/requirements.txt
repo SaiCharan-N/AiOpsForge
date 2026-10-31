@@ -1,0 +1,5 @@
+# Only needed on the machine where you RUN the evaluation scripts (not inside Docker):
+pytest>=8
+pandas>=2
+matplotlib>=3.8
+tabulate>=0.9

@@ -1,0 +1,429 @@
+{
+ "experiment": {
+  "experiment_id": "a8f97cdf-c8d9-4718-ad97-3075542b4e61",
+  "name": "repeat",
+  "design": "repeat",
+  "status": "done",
+  "error": null,
+  "created_at": "2026-10-09 03:28:42.127",
+  "finished_at": "2026-10-09 03:28:42",
+  "total_runs": 12,
+  "finished_runs": 12,
+  "progress": 1.0,
+  "config": {
+   "design": "repeat",
+   "preset": null,
+   "name": "repeat",
+   "alpha": 0.05,
+   "repetitions": 1,
+   "base": {
+    "use_memory": true
+   },
+   "requests": [
+    "t0",
+    "t1",
+    "t2",
+    "t3",
+    "t4",
+    "t5"
+   ],
+   "max_concurrency": 5,
+   "isolation": [
+    "memory ON; pairs whose first run already hit memory are excluded from the paired test"
+   ],
+   "total_runs": 12,
+   "environment": {
+    "started_at": "2026-10-09T03:28:42.127014+00:00",
+    "python": "3.12.3",
+    "platform": "Linux-6.18.44-fc-v80-x86_64-with-glibc2.39",
+    "default_model": "qwen2.5-coder:3b",
+    "embedding_model": "nomic-embed-text",
+    "ollama_base_url": "http://localhost:11434",
+    "default_max_qa_attempts": 3,
+    "memory_similarity_threshold": 0.75,
+    "memory_top_k": 3,
+    "failure_similarity_threshold": 0.65,
+    "batch_max_concurrency": 5
+   }
+  },
+  "arms": [
+   {
+    "batch_id": "730ebe2f-c9d8-4d0d-9bbc-c25c1fe7ab5d",
+    "level": "first",
+    "status": "done",
+    "total": 6,
+    "finished": 6,
+    "passed": 6,
+    "needs_review": 0,
+    "errors": 0
+   },
+   {
+    "batch_id": "ebc08087-2ac0-4218-b56e-7388bbbeb0e3",
+    "level": "repeat",
+    "status": "done",
+    "total": 6,
+    "finished": 6,
+    "passed": 6,
+    "needs_review": 0,
+    "errors": 0
+   }
+  ]
+ },
+ "result": {
+  "design": "repeat",
+  "pairs": [
+   {
+    "request": "t0",
+    "first": {
+     "total_ms": 3212,
+     "avg_attempts": 3.0,
+     "tokens_total": 284,
+     "ifs_avg": 0.8,
+     "memory_hits": 0,
+     "status": "passed"
+    },
+    "repeat": {
+     "total_ms": 1500,
+     "avg_attempts": 1.0,
+     "tokens_total": 220,
+     "ifs_avg": 0.8,
+     "memory_hits": 1,
+     "status": "passed"
+    }
+   },
+   {
+    "request": "t1",
+    "first": {
+     "total_ms": 3237,
+     "avg_attempts": 3.0,
+     "tokens_total": 277,
+     "ifs_avg": 0.8,
+     "memory_hits": 0,
+     "status": "passed"
+    },
+    "repeat": {
+     "total_ms": 1500,
+     "avg_attempts": 1.0,
+     "tokens_total": 220,
+     "ifs_avg": 0.8,
+     "memory_hits": 1,
+     "status": "passed"
+    }
+   },
+   {
+    "request": "t2",
+    "first": {
+     "total_ms": 3148,
+     "avg_attempts": 3.0,
+     "tokens_total": 282,
+     "ifs_avg": 0.8,
+     "memory_hits": 0,
+     "status": "passed"
+    },
+    "repeat": {
+     "total_ms": 1500,
+     "avg_attempts": 1.0,
+     "tokens_total": 220,
+     "ifs_avg": 0.8,
+     "memory_hits": 1,
+     "status": "passed"
+    }
+   },
+   {
+    "request": "t3",
+    "first": {
+     "total_ms": 3144,
+     "avg_attempts": 3.0,
+     "tokens_total": 281,
+     "ifs_avg": 0.8,
+     "memory_hits": 0,
+     "status": "passed"
+    },
+    "repeat": {
+     "total_ms": 1500,
+     "avg_attempts": 1.0,
+     "tokens_total": 220,
+     "ifs_avg": 0.8,
+     "memory_hits": 1,
+     "status": "passed"
+    }
+   },
+   {
+    "request": "t4",
+    "first": {
+     "total_ms": 3105,
+     "avg_attempts": 3.0,
+     "tokens_total": 284,
+     "ifs_avg": 0.8,
+     "memory_hits": 0,
+     "status": "passed"
+    },
+    "repeat": {
+     "total_ms": 1500,
+     "avg_attempts": 1.0,
+     "tokens_total": 220,
+     "ifs_avg": 0.8,
+     "memory_hits": 1,
+     "status": "passed"
+    }
+   },
+   {
+    "request": "t5",
+    "first": {
+     "total_ms": 3232,
+     "avg_attempts": 3.0,
+     "tokens_total": 271,
+     "ifs_avg": 0.8,
+     "memory_hits": 0,
+     "status": "passed"
+    },
+    "repeat": {
+     "total_ms": 1500,
+     "avg_attempts": 1.0,
+     "tokens_total": 220,
+     "ifs_avg": 0.8,
+     "memory_hits": 1,
+     "status": "passed"
+    }
+   }
+  ],
+  "excluded": [],
+  "memory_hit_in_repeat": 6,
+  "comparisons": {
+   "tokens_total": {
+    "test": "paired_t",
+    "n": 6,
+    "t": -29.09960690812887,
+    "df": 5,
+    "p": 8.982326281533824e-07,
+    "mean_diff": -59.833333333333336,
+    "ci95": [
+     -65.11885077409553,
+     -54.54781589257114
+    ],
+    "cohens_dz": -11.879864773414031,
+    "effect": "large",
+    "note": null,
+    "mean_first": 279.8333333333333,
+    "mean_repeat": 220,
+    "pct_change": -21.381774865991655
+   },
+   "total_ms": {
+    "test": "paired_t",
+    "n": 6,
+    "t": -75.31472849397262,
+    "df": 5,
+    "p": 7.817795559995478e-09,
+    "mean_diff": -1679.6666666666667,
+    "ci95": [
+     -1736.9957005700774,
+     -1622.3376327632561
+    ],
+    "cohens_dz": -30.747109154414318,
+    "effect": "large",
+    "note": null,
+    "mean_first": 3179.6666666666665,
+    "mean_repeat": 1500,
+    "pct_change": -52.825243736240694
+   },
+   "est_cost_usd": {
+    "test": "paired_t",
+    "n": 6,
+    "t": -29.999999999999947,
+    "df": 5,
+    "p": 7.718648620496104e-07,
+    "mean_diff": -8.999999999999999e-05,
+    "ci95": [
+     -9.771174550690895e-05,
+     -8.228825449309104e-05
+    ],
+    "cohens_dz": -12.247448713915869,
+    "effect": "large",
+    "note": null,
+    "mean_first": 0.00030000000000000003,
+    "mean_repeat": 0.00021,
+    "pct_change": -30.000000000000004
+   },
+   "avg_attempts": {
+    "test": "paired_t",
+    "n": 6,
+    "t": null,
+    "df": null,
+    "p": null,
+    "mean_diff": -2.0,
+    "ci95": null,
+    "cohens_dz": null,
+    "effect": null,
+    "note": "all pairs differ by exactly the same amount; cannot be tested",
+    "mean_first": 3.0,
+    "mean_repeat": 1.0,
+    "pct_change": -66.66666666666666
+   },
+   "ifs_avg": {
+    "test": "paired_t",
+    "n": 6,
+    "t": null,
+    "df": null,
+    "p": 1.0,
+    "mean_diff": 0.0,
+    "ci95": null,
+    "cohens_dz": null,
+    "effect": null,
+    "note": "identical values",
+    "mean_first": 0.8,
+    "mean_repeat": 0.8,
+    "pct_change": 0.0
+   }
+  },
+  "metric_labels": {
+   "tokens_total": "Tokens",
+   "total_ms": "Latency (ms)",
+   "est_cost_usd": "Est. cost (USD)",
+   "avg_attempts": "Attempts per task",
+   "ifs_avg": "Instruction fidelity (IFS)",
+   "pass": "Run passed"
+  },
+  "verdict": [
+   "Tokens: first 279.8 \u2192 repeat 220 (-21.4%, paired p=8.98e-07)",
+   "Latency (ms): first 3180 \u2192 repeat 1500 (-52.8%, paired p=7.82e-09)",
+   "Est. cost (USD): first 0.0003 \u2192 repeat 0.00021 (-30.0%, paired p=7.72e-07)",
+   "Instruction fidelity (IFS): first 0.8 \u2192 repeat 0.8 (+0.0%, paired p=1)"
+  ],
+  "warnings": [],
+  "arms": [
+   {
+    "label": "first",
+    "batch_id": "730ebe2f-c9d8-4d0d-9bbc-c25c1fe7ab5d",
+    "n": 6,
+    "errors": 0,
+    "passed": 6,
+    "cancelled": 0,
+    "metrics": {
+     "tokens_total": {
+      "n": 6,
+      "mean": 279.8333333333333,
+      "sd": 5.036533199202271,
+      "sem": 2.0561560684388183,
+      "median": 281.5,
+      "min": 271.0,
+      "max": 284.0
+     },
+     "total_ms": {
+      "n": 6,
+      "mean": 3179.6666666666665,
+      "sd": 54.62844192054782,
+      "sem": 22.30196802476808,
+      "median": 3180.0,
+      "min": 3105.0,
+      "max": 3237.0
+     },
+     "est_cost_usd": {
+      "n": 6,
+      "mean": 0.00030000000000000003,
+      "sd": 7.3484692283495466e-06,
+      "sem": 3.000000000000005e-06,
+      "median": 0.00030250000000000003,
+      "min": 0.000287,
+      "max": 0.000306
+     },
+     "avg_attempts": {
+      "n": 6,
+      "mean": 3.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 3.0,
+      "min": 3.0,
+      "max": 3.0
+     },
+     "ifs_avg": {
+      "n": 6,
+      "mean": 0.8,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.8,
+      "min": 0.8,
+      "max": 0.8
+     },
+     "pass": {
+      "n": 6,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     }
+    },
+    "est_cost_usd_total": 0.0018
+   },
+   {
+    "label": "repeat",
+    "batch_id": "ebc08087-2ac0-4218-b56e-7388bbbeb0e3",
+    "n": 6,
+    "errors": 0,
+    "passed": 6,
+    "cancelled": 0,
+    "metrics": {
+     "tokens_total": {
+      "n": 6,
+      "mean": 220.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 220.0,
+      "min": 220.0,
+      "max": 220.0
+     },
+     "total_ms": {
+      "n": 6,
+      "mean": 1500.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1500.0,
+      "min": 1500.0,
+      "max": 1500.0
+     },
+     "est_cost_usd": {
+      "n": 6,
+      "mean": 0.00021,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.00021,
+      "min": 0.00021,
+      "max": 0.00021
+     },
+     "avg_attempts": {
+      "n": 6,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     },
+     "ifs_avg": {
+      "n": 6,
+      "mean": 0.8,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 0.8,
+      "min": 0.8,
+      "max": 0.8
+     },
+     "pass": {
+      "n": 6,
+      "mean": 1.0,
+      "sd": 0.0,
+      "sem": 0.0,
+      "median": 1.0,
+      "min": 1.0,
+      "max": 1.0
+     }
+    },
+    "est_cost_usd_total": 0.00126
+   }
+  ],
+  "design_notes": [
+   "memory ON; pairs whose first run already hit memory are excluded from the paired test"
+  ]
+ }
+}
