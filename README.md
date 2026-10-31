@@ -6,6 +6,8 @@ live dashboard, and the Phase 4 experiments + research paper draft.
 
 ## Project structure
 
+(Phase 18 adds `evaluation/` — see below.)
+
 ```
 aiopsforge-phase4/
 ├── docker-compose.yml, .env.example      # the whole running stack (see Phases 1-3 sections below)
@@ -21,6 +23,20 @@ aiopsforge-phase4/
 │   └── AIOpsForge_Research_Paper_Draft.docx   # NEW — full draft, ready to finish with real numbers
 └── DEMO_CHECKLIST.md                      # NEW — Days 59-60 demo script + bug-bash checklist
 ```
+
+## Phase 18 (new): paper-evaluation toolkit
+
+* `evaluation/` — 20 entity-rich tasks with **hidden tests** (+ reference solutions that prove the tests), raw-model baseline (A0),
+  the A1–A4 ladder runner, environment capture, and a script that turns the CSVs into LaTeX tables, figures and an honest
+  `SUMMARY.md`. Start with `evaluation/README.md`.
+* New per-run settings (API / batch / experiment factor): `failure_recovery` (false = retries see only the raw QA error),
+  `temperature`, `seed`, `num_ctx` (also `OLLAMA_TEMPERATURE` / `OLLAMA_SEED` / `OLLAMA_NUM_CTX` in `.env`).
+* IFS recording: `app.ifs.record_ifs` stores planner-stage and per-attempt developer-stage scores (substring + strict matcher, and
+  the entities that were lost); `GET /projects/{id}/ifs`; new columns `ifs_strict_avg`, `ifs_planner` in every CSV/experiment.
+* `docker-compose.yml`: Ollama memory limit is now `OLLAMA_MEM_LIMIT` (default 10g; the old fixed 4g could not hold a 7B model) and
+  extra models (`OLLAMA_EXTRA_MODELS`) are pulled at start-up.
+* New checks: `scripts/test_phase18.py`, `scripts/test_evaluation.py`.
+* `experiments/results/` holds SIMULATED data — do not cite it.
 
 ## Days 51–60: what's new in this zip
 
@@ -387,3 +403,174 @@ docker compose exec ollama ollama pull nomic-embed-text
 See each phase's original notes inline in the code comments (every module
 still explains which Day/Week it corresponds to) if you want the
 day-by-day build story rather than just the finished system.
+
+
+## Failure Recovery (context-aware debugging)
+
+When QA fails, the pipeline now works from a structured record instead of a truncated error string:
+
+1. `qa_node` parses the FULL output (pytest runs with `--showlocals`) into a `FailureContext`
+   (`app/agents/failure_parser.py`): error type/category, exact file:line:function, variable values at the
+   failing frame, a line-numbered snippet, the function most likely needing the fix, and a specific hint.
+2. `failure_analyzer_node` adds repeat-error detection (same signature as an earlier attempt of the same
+   task), similar past fixes from memory, and — only when the parser is low-confidence — an LLM refinement
+   (`FAILURE_ANALYZER_LLM_MODE=auto|always|never`).
+3. The Developer's retry prompt now includes its previous (line-numbered) code, the diagnosis, and what was
+   already tried.
+4. When a retry passes, the fixed failure is stored in the `failure_patterns` table with what changed
+   (`app/memory.py: save_failure_pattern / find_similar_failures`).
+
+Per-task metrics for measuring the effect are in `task_history`: `failures`, `repeated_errors`,
+`failure_categories`, `used_similar_fix`. Test: `python scripts/test_failure_recovery.py`.
+
+
+## Metrics & observability (cost, latency, success)
+
+Every run is measured and stored in the `metrics_logs` table (created by `db/init.sql` for fresh volumes and by the
+startup migration for existing ones):
+
+| kind | what | where it is recorded |
+|---|---|---|
+| `llm` | tokens in/out (Ollama's own `prompt_eval_count`/`eval_count`), wall time, server-side time, model-load time, transport overhead (`wall − server`) | `app/llm.py` |
+| `embed` | embedding call time (token count estimated) | `app/embeddings.py` |
+| `tool` | each MCP tool call, by name | `app/mcp_client.py` |
+| `db` | app-DB and memory queries (net of embedding time) | `@metrics.timed_db` in `db.py` / `memory.py` |
+| `node` | each LangGraph node execution with its LLM/tool/DB/embed subtotals and "other" | `metrics.instrument_node` in `graph.py` |
+| `task` / `pipeline` | per-task outcome (passed, attempts, failures, repeat errors, timeouts) / per-run total + outcome | `next_task_node` / `run_pipeline` |
+
+Call sites don't pass metrics around: a per-node context scope (a `contextvar`, copied into `asyncio.to_thread`
+workers) attributes each call to project / agent / task / attempt. Events are buffered and written in one batched
+insert when a node finishes; every metrics function swallows its own errors, and `METRICS_ENABLED=false` turns it all
+into a no-op.
+
+**API** (all read-only): `GET /projects/{id}/metrics` · `GET /metrics/projects` · `GET /metrics/compare?ids=a,b` ·
+`GET /metrics/summary` · `GET /metrics/models` · `GET /metrics/regression?model=&window=&threshold=` ·
+`GET /metrics/export?format=csv|json`. Interactive docs at `/docs`.
+
+**Dashboard**: the **Metrics** tab (the chat keeps streaming while you look at it): KPIs, tokens-per-project and
+run-time trend charts, a sortable/filterable project table, per-run drill-down (tokens & cost by agent, where the
+time went, per-node timeline, tools, tasks), a two-project comparison, success rates, per-model speed with a
+regression check, and CSV/JSON export.
+
+Cost = `tokens/1000 × rate` (`TOKEN_RATE_IN_PER_1K` / `TOKEN_RATE_OUT_PER_1K`). Tests: `python scripts/test_metrics.py`;
+dashboard smoke test: `cd frontend && npm i -D vitest@1 jsdom @testing-library/react@14 && npx vitest run tests`.
+
+
+## User intervention (pause → feedback → resume)
+
+Steer a run while it is in flight instead of restarting it. In the chat, tick **Pause for my review** before sending
+(or call `POST /request/async` with `"interactive": true`). The run then stops at three points and waits for you:
+
+| pause point | when | you can |
+|---|---|---|
+| `planner` | after the task list is made — "Does this plan make sense?" | approve · **edit/add/remove tasks** · give guidance (the Planner re-plans with it) · cancel |
+| `developer` | after the **first** generated file — "Is this the right approach?" | approve · give guidance (the Developer regenerates with it and its previous version) · cancel |
+| `qa_failure` | after a QA failure is analysed, before the retry | retry as suggested · add guidance / a clarification · **skip the task** · cancel |
+
+Any run (interactive or not) can also be paused on demand: the **⏸ Pause** button, or
+`POST /projects/{id}/intervention {"pause_after": "next" | "planner" | "developer" | "qa" | "failure_analyzer" | "next_task"}`
+(`{"cancel": true}` withdraws pending requests).
+
+**API**
+- `POST /request/async` — new fields `interactive` (default `false`) and `pause_points` (subset of `planner`, `developer`, `qa_failure`). `POST /request` refuses `interactive` (it blocks and never returns the project id).
+- `POST /projects/{id}/feedback` — `{"action": "approve|revise|skip_task|abort", "guidance": "...", "clarification": "...", "tasks": ["..."]}`. `409` if the run isn't paused, `422` for an answer not valid at that point.
+- `GET /projects/{id}/status` — now includes `paused` and `intervention` (pause point, question, payload, pending requests).
+- `GET /projects/{id}/interventions` — history: every pause request and every resolved pause (what you were asked, your answer, how long the run waited). Stored in the `interventions` table.
+- WebSocket: new events `pause_requested`, `pipeline_paused`, `pipeline_resumed`, `plan_revised`; `pipeline_done` gains `aborted`. Existing events are unchanged.
+
+**How it behaves**
+- Guidance given at the plan applies to every later task; guidance given at the first-file or failed-test pause applies to that task only.
+- Nothing is lost on pause/resume: the paused node's result stays in the in-memory graph state and is what continues (or is re-run). A state snapshot is also written to Redis at each pause. Cancelling keeps the plan, the task history and every file already written (they remain downloadable); the project status becomes `cancelled`.
+- Time spent waiting for you is **not** counted as latency: it is excluded from node durations and the run's `total_ms`, and recorded separately (`latency.paused_ms` in the metrics API).
+- A pause nobody answers auto-approves after `INTERVENTION_TIMEOUT_SECONDS` (default 900).
+
+**Known limitations**
+- Single backend process (like the live event bus): if the backend restarts while a run is paused, that run ends. The Redis snapshot lets you inspect what was done, but there is no automatic resume across restarts.
+- QA runs pytest across the whole project workspace, so a skipped/escalated task's leftover *test* file can still fail later tasks' QA (this predates the feature; skipping just makes it easier to hit).
+
+Tests: `python scripts/test_intervention.py` (12 scenarios incl. an HTTP end-to-end); UI: `cd frontend && npm i -D vitest@1 jsdom @testing-library/react@14 && npx vitest run tests`.
+
+
+## Framework-agnostic scaffolding (FastAPI, Flask, Django, Express, Next.js)
+
+Ask for a web app and it is built in the framework you name — or pick one explicitly.
+
+- **Detection** (`app/webapp_detect.py`): "Build a Flask app…", "a Django blog", "an Express server", "a Next.js landing page", "a React app" (→ Next.js). Handles negation ("Flask, **not** Django"). A web app that names no framework gets **FastAPI** (the original behaviour).
+- **Explicit choice**: `framework` field or `?framework=` query parameter on `POST /request` and `POST /request/async` (query wins), or the picker in the chat box. Choosing one means "build me a web app in that framework". `GET /frameworks` lists them; an unknown value is a `422` naming the supported ones.
+- **Code tasks too**: "Write a Flask route … with a test" stays a single-file task, but the Developer is told to use Flask idioms and its test client.
+
+| framework | entry | tests QA runs | boot QA runs |
+|---|---|---|---|
+| FastAPI | `main.py` | pytest, only if the project has tests | `uvicorn main:app` |
+| Flask | `app.py` | `pytest` (smoke test is part of the scaffold) | `flask --app app run` |
+| Django | `manage.py` + `config/` + `home/` | `manage.py test` | `migrate --run-syncdb`, `runserver` |
+| Express | `server.js` | `npm test` (`node --test`) | `node server.js` with `PORT` |
+| Next.js | `pages/index.js` | `npm run build` | `next start` |
+
+Every QA run is: static check (py_compile / `node --check` / package.json / Next structure) → the framework's own tests → boot the app and make a real HTTP request. Stages that need installed dependencies **skip with a note** instead of failing when the install hasn't finished. Boot failures that return HTTP 500 fail fast with the server's traceback.
+
+**How a scaffold is built**: each framework has a real, runnable starter project in `backend/app/scaffolds/templates/<id>/` and a `Framework` entry in `backend/app/scaffolds/__init__.py` (prompt, required files, platform-owned "locked" files, required dependencies). The model is shown the starter's key files and returns only what it changes; anything required that it leaves out is backfilled from the starter, platform-owned files (e.g. Django's `settings.py`) are restored if it touches them, and forgotten dependencies (`pytest`, `express`, `next`…) are added to `requirements.txt` / `package.json`. Unusable model output falls back to the complete starter. **FastAPI keeps its legacy behaviour exactly** (no smoke test, `requirements.txt` untouched).
+
+**Add a framework**: a `templates/<id>/` directory + a `Framework(...)` entry + keywords in `webapp_detect.py` + a runner in `mcp_server/tools/check_webapp.py`. Nothing else branches on the id.
+
+**Docker**: the MCP server image now includes `nodejs`/`npm` (Express/Next QA) and `flask`/`fastapi`/`httpx` (single-file framework code tasks). Rebuild: `docker compose up --build`.
+
+**Failure analysis understands the new stacks**: Node stacks, `node:test` TAP output, Jinja2/Django template errors, Next/webpack build errors, and — for Flask/Django/Express — the real exception behind `assert 500 == 200` instead of the assertion. Metrics record the framework per run/task: project table column, CSV column, and pass rate by framework.
+
+**Bugs fixed on the way**: the FastAPI starter used a `TemplateResponse` form removed from current Starlette (every generated FastAPI site 500'd on `/`); `check_webapp` py_compiled every library inside `.venv`; Express's static middleware masked the `/` route.
+
+Limitations: Django apps must live in the pre-installed `home` app (settings are platform-owned); Next.js is JavaScript only (no TypeScript, pages router); QA needs network at install time for npm/pip packages.
+
+Tests: `python scripts/test_frameworks.py` (builds shared pip/npm environments under `/tmp/aiops_fw_*` on first run; `AIOPS_TEST_NEXT=1` adds a real `next build`).
+
+
+## Batch processing & experiments
+
+**Batches** — run many requests at once:
+
+```bash
+curl -X POST localhost:8000/batch -H 'Content-Type: application/json' -d '{
+  "name": "demo", "requests": ["a function that checks if a number is prime, with a test",
+                               {"request": "Build a Flask app with a home page", "framework": "flask"}],
+  "defaults": {"max_qa_attempts": 3, "use_memory": false}, "max_concurrency": 4}'
+# -> {"batch_id": "...", "status_url": "/batch/<id>", "results_url": "/batch/<id>/results"}
+```
+
+`GET /batch/{id}` (live status) · `GET /batch/{id}/results` (comparison table + aggregates) · `?format=csv` (raw rows) ·
+`POST /batch/{id}/cancel` · `GET /batch`. Each item is an ordinary run with its own project, workspace and live
+event stream; one crashing run does not stop the others. Per-run settings: `communication_mode`, `framework`,
+`model`, `max_qa_attempts`, `use_memory` (an item's own value beats `defaults`).
+
+**Experiments** — controlled comparisons with statistics (`POST /experiments`, or the **Batches → Experiments** tab):
+
+| design | question | analysis |
+|---|---|---|
+| `ab` | the same requests under each level of one factor: `communication_mode`, `model`, `max_qa_attempts`, `use_memory`, `framework` | Welch t-test + Mann-Whitney per metric, Fisher's exact for pass rate, Holm-corrected across levels, 95% CI, Cohen's d |
+| `repeat` (old exp1) | does a warm run beat a cold run? | paired t-test; pairs whose first run already hit memory are excluded |
+| `sequence` (old exp3) | does effort fall over a sequence of related tasks? | linear trend + first-vs-second half |
+| `mcp_overhead` (old exp2) | cost of an MCP tool call vs a direct write | Welch + Mann-Whitney, discovery time |
+
+Presets: `communication_mode`, `memory`, `retry_policy`, `memory_speedup`, `repeat_bug_trend`, `mcp_overhead`
+(`GET /experiments/presets`). Results: `GET /experiments/{id}/results` (+ `?format=csv` raw per-run data, `?format=latex` tables).
+CLI: `python scripts/integrate_experiments.py <preset>` (see `experiments/README.md`).
+
+**Fairness rules the runner enforces** (also written into every result): long-term memory is switched **off** in all arms
+unless memory is the factor (otherwise one arm learns from another); everything not varied is identical between arms;
+repeat/sequence force memory on and run in order; errored runs count as failures and are excluded from continuous
+metrics; each result carries warnings (small n, concurrency, arm order).
+
+**Using this in a paper** — what the tool gives you and what it cannot:
+- Every experiment stores its full configuration and environment (model, embedding model, thresholds, Python,
+  platform, start time), so it can be reproduced and cited. Results stay retrievable after a restart.
+- Report **n, the effect size and the confidence interval** next to p. With 5–30 runs per condition a 3B model's
+  run-to-run variance is large and significance is fragile; the page flags groups with n < 5 as inconclusive.
+- Arms run one after another, so model warm-up or thermal drift is not randomised away: repeat with the levels
+  reversed to check for an order effect. Latency inside a concurrent batch includes queueing for the model; a
+  default Ollama serialises generation (`OLLAMA_NUM_PARALLEL`), so use concurrency 1 when latency is the outcome.
+- Per-run `model` overrides apply to generation; the embedding model is global.
+- Raw data (`?format=csv`) is meant for re-analysis in R / pandas — do your final statistics there if a reviewer will ask.
+
+Limits: `BATCH_MAX_CONCURRENCY` (5), `BATCH_MAX_RUNS` (100). Single backend process: a restart marks running batches and
+experiments `interrupted`.
+
+Tests: `python scripts/test_stats.py`, `scripts/test_batch.py`, `scripts/test_integrate_experiments.py`.

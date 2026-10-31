@@ -1,0 +1,332 @@
+{
+  "version": 1,
+  "tasks": [
+    {
+      "id": "T01",
+      "tier": "easy",
+      "core": true,
+      "entry_points": [
+        "normalize_email"
+      ],
+      "request": "Write a function `normalize_email(raw)` that lowercases the address, strips surrounding whitespace, removes any `+tag` suffix from the local part (the text between the first `+` and the `@`), and raises `ValueError('invalid email')` if there is no `@`. Include a pytest test.",
+      "tests": [
+        "assert normalize_email('  Foo+News@Example.COM ') == 'foo@example.com'",
+        "assert normalize_email('a@b.com') == 'a@b.com'",
+        "assert normalize_email('USER+a+b@Site.org') == 'user@site.org'",
+        "assert raises(ValueError, normalize_email, 'no-at-sign')"
+      ]
+    },
+    {
+      "id": "T02",
+      "tier": "medium",
+      "core": true,
+      "entry_points": [
+        "is_valid_isbn13"
+      ],
+      "request": "Write `is_valid_isbn13(code)` that accepts hyphens, uses the ISBN-13 checksum (digits weighted 1 and 3 alternately, total divisible by 10), and returns a bool. Include a pytest test.",
+      "tests": [
+        "assert is_valid_isbn13('978-0-306-40615-7') is True",
+        "assert is_valid_isbn13('9780306406157') is True",
+        "assert is_valid_isbn13('978-0-306-40615-8') is False",
+        "assert is_valid_isbn13('123') is False",
+        "assert is_valid_isbn13('978030640615X') is False"
+      ]
+    },
+    {
+      "id": "T03",
+      "tier": "hard",
+      "core": true,
+      "entry_points": [
+        "roman_to_int"
+      ],
+      "request": "Write `roman_to_int(s)` that converts a Roman numeral between 1 and 3999 (using `I`, `V`, `X`, `L`, `C`, `D`, `M`) to an integer and raises `ValueError` for invalid numerals such as 'IIII'. Include a pytest test.",
+      "tests": [
+        "assert roman_to_int('III') == 3 and roman_to_int('IV') == 4 and roman_to_int('IX') == 9",
+        "assert roman_to_int('LVIII') == 58",
+        "assert roman_to_int('MCMXCIV') == 1994",
+        "assert roman_to_int('MMMCMXCIX') == 3999",
+        "assert raises(ValueError, roman_to_int, 'IIII')",
+        "assert raises(ValueError, roman_to_int, 'ABC')",
+        "assert raises(ValueError, roman_to_int, '')",
+        "assert raises(ValueError, roman_to_int, 'MMMM')"
+      ]
+    },
+    {
+      "id": "T04",
+      "tier": "easy",
+      "core": true,
+      "entry_points": [
+        "chunk_list"
+      ],
+      "request": "Write `chunk_list(items, size)` that splits a list into consecutive chunks of `size` and returns a list of lists (the last chunk may be shorter). Raise `ValueError` if `size` < 1. Include a pytest test.",
+      "tests": [
+        "assert chunk_list([1, 2, 3, 4, 5], 2) == [[1, 2], [3, 4], [5]]",
+        "assert chunk_list([], 3) == []",
+        "assert chunk_list([1, 2], 5) == [[1, 2]]",
+        "assert chunk_list(list('abcdef'), 3) == [['a', 'b', 'c'], ['d', 'e', 'f']]",
+        "assert raises(ValueError, chunk_list, [1, 2, 3], 0)"
+      ]
+    },
+    {
+      "id": "T05",
+      "tier": "hard",
+      "core": true,
+      "entry_points": [
+        "merge_intervals"
+      ],
+      "request": "Write `merge_intervals(intervals)` that takes a list of `[start, end]` pairs, merges every pair that overlaps or touches (end == next start), and returns a list of `[start, end]` lists sorted by start. Include a pytest test.",
+      "tests": [
+        "assert merge_intervals([[1, 3], [2, 6], [8, 10], [15, 18]]) == [[1, 6], [8, 10], [15, 18]]",
+        "assert merge_intervals([[1, 4], [4, 5]]) == [[1, 5]]",
+        "assert merge_intervals([[8, 10], [1, 3], [2, 6]]) == [[1, 6], [8, 10]]",
+        "assert merge_intervals([]) == []",
+        "assert merge_intervals([[5, 7]]) == [[5, 7]]",
+        "assert merge_intervals([[1, 10], [2, 3]]) == [[1, 10]]"
+      ]
+    },
+    {
+      "id": "T06",
+      "tier": "hard",
+      "core": false,
+      "entry_points": [
+        "LRUCache"
+      ],
+      "request": "Write `class LRUCache` with `__init__(self, capacity)`, `get(key)` that returns the value or -1 when the key is missing, and `put(key, value)` that evicts the least recently used key when `capacity` is exceeded. Both `get` and `put` count as a use. Include a pytest test.",
+      "tests": [
+        "c = LRUCache(2); c.put(1, 1); c.put(2, 2); assert c.get(1) == 1; c.put(3, 3); assert c.get(2) == -1; c.put(4, 4); assert c.get(1) == -1; assert c.get(3) == 3; assert c.get(4) == 4",
+        "c = LRUCache(1); c.put(1, 1); c.put(1, 5); assert c.get(1) == 5; c.put(2, 2); assert c.get(1) == -1",
+        "c = LRUCache(2); assert c.get(9) == -1",
+        "c = LRUCache(2); c.put(1, 'a'); c.put(2, 'b'); c.put(1, 'c'); c.put(3, 'd'); assert c.get(2) == -1 and c.get(1) == 'c'"
+      ]
+    },
+    {
+      "id": "T07",
+      "tier": "easy",
+      "core": true,
+      "entry_points": [
+        "validate_password"
+      ],
+      "request": "Write `validate_password(pw)` that returns True only if the password has at least 12 characters, an uppercase letter, a lowercase letter, a digit and at least one of the symbols `!@#$`; otherwise return False. Include a pytest test.",
+      "tests": [
+        "assert validate_password('Abcdefghij1!') is True",
+        "assert validate_password('Abcdefghij1') is False",
+        "assert validate_password('abcdefghij1!') is False",
+        "assert validate_password('ABCDEFGHIJ1!') is False",
+        "assert validate_password('Abcdefghijk!') is False",
+        "assert validate_password('Abcdefghij12') is False",
+        "assert validate_password('Abcdefghij1%') is False",
+        "assert validate_password('Short1!a') is False"
+      ]
+    },
+    {
+      "id": "T08",
+      "tier": "medium",
+      "core": true,
+      "entry_points": [
+        "parse_iso_date"
+      ],
+      "request": "Write `parse_iso_date(s)` that parses a `YYYY-MM-DD` string into a `datetime.date` and raises `ValueError` for a month outside 1-12, a day that does not exist in that month, or any other malformed string. Include a pytest test.",
+      "tests": [
+        "import datetime; assert parse_iso_date('2024-02-29') == datetime.date(2024, 2, 29)",
+        "import datetime; assert parse_iso_date('1999-12-31') == datetime.date(1999, 12, 31)",
+        "assert raises(ValueError, parse_iso_date, '2023-02-29')",
+        "assert raises(ValueError, parse_iso_date, '2024-13-01')",
+        "assert raises(ValueError, parse_iso_date, '2024-00-10')",
+        "assert raises(ValueError, parse_iso_date, '20240101')",
+        "assert raises(ValueError, parse_iso_date, 'hello')"
+      ]
+    },
+    {
+      "id": "T09",
+      "tier": "medium",
+      "core": false,
+      "entry_points": [
+        "celsius_to_fahrenheit",
+        "fahrenheit_to_celsius"
+      ],
+      "request": "Write `celsius_to_fahrenheit(c)` and `fahrenheit_to_celsius(f)` that round the result to 2 decimals and raise `ValueError` for temperatures below absolute zero (-273.15 C / -459.67 F). Include a pytest test.",
+      "tests": [
+        "assert celsius_to_fahrenheit(100) == 212.0 and celsius_to_fahrenheit(0) == 32.0",
+        "assert celsius_to_fahrenheit(37) == 98.6",
+        "assert fahrenheit_to_celsius(98.6) == 37.0 and fahrenheit_to_celsius(32) == 0.0",
+        "assert celsius_to_fahrenheit(-273.15) == -459.67",
+        "assert raises(ValueError, celsius_to_fahrenheit, -273.16)",
+        "assert raises(ValueError, fahrenheit_to_celsius, -459.68)"
+      ]
+    },
+    {
+      "id": "T10",
+      "tier": "medium",
+      "core": false,
+      "entry_points": [
+        "word_frequency"
+      ],
+      "request": "Write `word_frequency(text, top_n=3)` that lowercases the text, ignores punctuation, and returns a list of `(word, count)` tuples for the `top_n` most frequent words, ordered by count descending and then alphabetically. Include a pytest test.",
+      "tests": [
+        "assert word_frequency('the cat and the hat and the bat') == [('the', 3), ('and', 2), ('bat', 1)]",
+        "assert word_frequency('Hello, hello! World.', top_n=2) == [('hello', 2), ('world', 1)]",
+        "assert word_frequency('') == []",
+        "assert word_frequency('b a', top_n=10) == [('a', 1), ('b', 1)]"
+      ]
+    },
+    {
+      "id": "T11",
+      "tier": "medium",
+      "core": false,
+      "entry_points": [
+        "camel_to_snake"
+      ],
+      "request": "Write `camel_to_snake(name)` that converts `camelCase` and `PascalCase` identifiers to `snake_case`, keeping acronyms together (`HTTPResponseCode` -> `http_response_code`). Include a pytest test.",
+      "tests": [
+        "assert camel_to_snake('camelCase') == 'camel_case'",
+        "assert camel_to_snake('HTTPResponseCode') == 'http_response_code'",
+        "assert camel_to_snake('already_snake') == 'already_snake'",
+        "assert camel_to_snake('XMLParser') == 'xml_parser'",
+        "assert camel_to_snake('simple') == 'simple'",
+        "assert camel_to_snake('getHTTPResponse') == 'get_http_response'"
+      ]
+    },
+    {
+      "id": "T12",
+      "tier": "medium",
+      "core": false,
+      "entry_points": [
+        "is_balanced"
+      ],
+      "request": "Write `is_balanced(s)` that returns True if the brackets `()`, `[]` and `{}` in the string are balanced and correctly nested, ignoring every other character. Include a pytest test.",
+      "tests": [
+        "assert is_balanced('([]{})') is True",
+        "assert is_balanced('([)]') is False",
+        "assert is_balanced('((') is False",
+        "assert is_balanced('') is True",
+        "assert is_balanced('a(b)c[d]{e}') is True",
+        "assert is_balanced(')(') is False"
+      ]
+    },
+    {
+      "id": "T13",
+      "tier": "easy",
+      "core": true,
+      "entry_points": [
+        "fizzbuzz"
+      ],
+      "request": "Write `fizzbuzz(n)` that returns a list of strings for the numbers 1 to `n`: 'Fizz' for multiples of 3, 'Buzz' for multiples of 5, 'FizzBuzz' for multiples of both, otherwise the number as a string. Return `[]` for `n` = 0 and raise `ValueError` for negative `n`. Include a pytest test.",
+      "tests": [
+        "assert fizzbuzz(15) == ['1','2','Fizz','4','Buzz','Fizz','7','8','Fizz','Buzz','11','Fizz','13','14','FizzBuzz']",
+        "assert fizzbuzz(0) == []",
+        "assert fizzbuzz(5)[-1] == 'Buzz' and fizzbuzz(1) == ['1']",
+        "assert raises(ValueError, fizzbuzz, -1)"
+      ]
+    },
+    {
+      "id": "T14",
+      "tier": "easy",
+      "core": false,
+      "entry_points": [
+        "binary_search"
+      ],
+      "request": "Write `binary_search(items, target)` that returns the index of `target` in the sorted list `items`, or -1 if it is not present. Include a pytest test.",
+      "tests": [
+        "assert binary_search([1, 3, 5, 7, 9], 7) == 3",
+        "assert binary_search([1, 3, 5, 7, 9], 1) == 0 and binary_search([1, 3, 5, 7, 9], 9) == 4",
+        "assert binary_search([1, 3, 5, 7, 9], 4) == -1",
+        "assert binary_search([], 1) == -1",
+        "assert binary_search([5], 5) == 0"
+      ]
+    },
+    {
+      "id": "T15",
+      "tier": "medium",
+      "core": false,
+      "entry_points": [
+        "flatten"
+      ],
+      "request": "Write `flatten(nested)` that recursively flattens arbitrarily nested lists into a single flat list, keeping strings whole (do not split 'ab' into characters). Include a pytest test.",
+      "tests": [
+        "assert flatten([1, [2, [3, [4]]], 5]) == [1, 2, 3, 4, 5]",
+        "assert flatten(['ab', ['cd']]) == ['ab', 'cd']",
+        "assert flatten([]) == [] and flatten([[], [[]]]) == []",
+        "assert flatten([1, 2, 3]) == [1, 2, 3]"
+      ]
+    },
+    {
+      "id": "T16",
+      "tier": "easy",
+      "core": false,
+      "entry_points": [
+        "dedupe_preserve_order"
+      ],
+      "request": "Write `dedupe_preserve_order(items)` that returns a new list with duplicates removed, keeping the first occurrence of each item in its original order. Include a pytest test.",
+      "tests": [
+        "assert dedupe_preserve_order([3, 1, 3, 2, 1]) == [3, 1, 2]",
+        "assert dedupe_preserve_order([]) == []",
+        "assert dedupe_preserve_order(list('banana')) == ['b', 'a', 'n']",
+        "x = [1, 1, 2]; y = dedupe_preserve_order(x); assert x == [1, 1, 2] and y == [1, 2]"
+      ]
+    },
+    {
+      "id": "T17",
+      "tier": "hard",
+      "core": false,
+      "entry_points": [
+        "MinStack"
+      ],
+      "request": "Write `class MinStack` with `push(x)`, `pop()` (removes and returns the top value), `top()` and `get_min()`, all O(1); `pop()` and `top()` on an empty stack raise `IndexError`. `get_min()` returns the smallest value currently on the stack. Include a pytest test.",
+      "tests": [
+        "s = MinStack(); s.push(5); s.push(3); s.push(7); assert s.get_min() == 3 and s.top() == 7",
+        "s = MinStack(); s.push(5); s.push(3); s.push(7); assert s.pop() == 7 and s.pop() == 3 and s.get_min() == 5 and s.top() == 5",
+        "s = MinStack(); assert raises(IndexError, s.pop)",
+        "s = MinStack(); assert raises(IndexError, s.top)",
+        "s = MinStack(); s.push(2); s.push(2); s.pop(); assert s.get_min() == 2"
+      ]
+    },
+    {
+      "id": "T18",
+      "tier": "medium",
+      "core": false,
+      "entry_points": [
+        "luhn_check"
+      ],
+      "request": "Write `luhn_check(number)` that returns True if a string of digits (spaces allowed) passes the Luhn checksum and False otherwise, including for any string containing other characters. Include a pytest test.",
+      "tests": [
+        "assert luhn_check('79927398713') is True",
+        "assert luhn_check('79927398710') is False",
+        "assert luhn_check('4539 1488 0343 6467') is True",
+        "assert luhn_check('4539 1488 0343 6468') is False",
+        "assert luhn_check('abc') is False"
+      ]
+    },
+    {
+      "id": "T19",
+      "tier": "easy",
+      "core": false,
+      "entry_points": [
+        "slugify"
+      ],
+      "request": "Write `slugify(text)` that lowercases the text, replaces every run of non-alphanumeric characters with a single `-`, and strips leading and trailing `-`. Include a pytest test.",
+      "tests": [
+        "assert slugify('Hello, World!') == 'hello-world'",
+        "assert slugify('  Multiple   spaces  ') == 'multiple-spaces'",
+        "assert slugify('C++ & Python 3.12') == 'c-python-3-12'",
+        "assert slugify('---') == ''",
+        "assert slugify('Already-slugged') == 'already-slugged'"
+      ]
+    },
+    {
+      "id": "T20",
+      "tier": "hard",
+      "core": false,
+      "entry_points": [
+        "parse_csv_line"
+      ],
+      "request": "Write `parse_csv_line(line)` that splits one CSV line into a list of fields, honouring double-quoted fields that contain commas and treating a doubled quote `\"\"` inside quotes as a literal quote. Include a pytest test.",
+      "tests": [
+        "assert parse_csv_line('a,b,c') == ['a', 'b', 'c']",
+        "assert parse_csv_line('a,\"b,c\",d') == ['a', 'b,c', 'd']",
+        "assert parse_csv_line('\"say \"\"hi\"\"\",x') == ['say \"hi\"', 'x']",
+        "assert parse_csv_line('') == ['']",
+        "assert parse_csv_line('a,,c') == ['a', '', 'c']"
+      ]
+    }
+  ]
+}

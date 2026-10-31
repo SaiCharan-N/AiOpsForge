@@ -7,7 +7,8 @@ the first of the three real agents in the pipeline — everything before this
 """
 from app.llm import generate, generate_json, LLMOutputError
 from app.schemas import Task
-from app.webapp_detect import is_webapp_request
+from app.scaffolds import DEFAULT_FRAMEWORK
+from app.webapp_detect import detect_framework, is_webapp_request
 
 PLANNER_SYSTEM_PROMPT = """You are the Planner Agent in an automated software \
 development pipeline. Given a user's request, break it into a short, ordered \
@@ -29,7 +30,14 @@ a task off to a developer. Paraphrase and compress; do not just repeat the \
 request back verbatim. Respond with ONLY the summary text, nothing else."""
 
 
-def _summarize_webapp_request(request: str) -> str:
+def _guidance_block(user_guidance: list[str] | None) -> str:
+    if not user_guidance:
+        return ""
+    return ("\n\nThe user reviewed an earlier plan and gave this guidance — follow it:\n"
+            + "\n".join(f"- {g}" for g in user_guidance))
+
+
+def _summarize_webapp_request(request: str, user_guidance: list[str] | None = None) -> str:
     """Produces the Planner's SUMMARY of a website request — this is what
     becomes the webapp_scaffold Task's description, distinct from the raw
     request text itself. This distinction matters: it's what makes the
@@ -44,7 +52,7 @@ def _summarize_webapp_request(request: str) -> str:
     """
     try:
         summary = generate(
-            f"User request:\n{request}\n\nWrite the summary described above.",
+            f"User request:\n{request}{_guidance_block(user_guidance)}\n\nWrite the summary described above.",
             system=WEBAPP_SUMMARY_SYSTEM_PROMPT,
         )
         summary = (summary or "").strip()
@@ -53,7 +61,7 @@ def _summarize_webapp_request(request: str) -> str:
         return request.strip()
 
 
-def plan(request: str) -> list[Task]:
+def plan(request: str, user_guidance: list[str] | None = None, framework: str | None = None) -> list[Task]:
     """Calls the LLM to break `request` into an ordered Task list.
 
     Phase 7: if `request` reads as a website/web-app build (see
@@ -64,15 +72,22 @@ def plan(request: str) -> list[Task]:
     scaffolding as one cohesive unit (handled by app.agents.scaffolder)
     is a better fit than forcing it through the normal task list.
 
+    `framework` is the user's explicit framework choice (already validated);
+    each returned Task carries the resolved framework.
+
     Falls back to a single catch-all task if the model's output can't be
     parsed even after llm.generate_json's internal retries — a plan with one
     broad task is more useful to the rest of the pipeline than a hard crash.
     """
-    if is_webapp_request(request):
-        summary = _summarize_webapp_request(request)
-        return [Task(order=1, description=summary, type="webapp_scaffold")]
+    # Framework: an explicit choice beats whatever the request text names.
+    # Choosing one explicitly means "build me a web app in that framework".
+    fw = framework or detect_framework(request)
+    if framework or is_webapp_request(request):
+        summary = _summarize_webapp_request(request, user_guidance)
+        return [Task(order=1, description=summary, type="webapp_scaffold", framework=fw or DEFAULT_FRAMEWORK)]
 
-    prompt = f"User request:\n{request}\n\nRespond with the JSON object described above."
+    prompt = (f"User request:\n{request}{_guidance_block(user_guidance)}"
+              f"\n\nRespond with the JSON object described above.")
     try:
         parsed = generate_json(prompt, system=PLANNER_SYSTEM_PROMPT)
         descriptions = parsed["tasks"]
@@ -81,8 +96,10 @@ def plan(request: str) -> list[Task]:
     except (LLMOutputError, KeyError, ValueError):
         descriptions = [request]
 
+    # Plain code tasks keep `fw` (e.g. "Write a Flask route ...") so the
+    # Developer is told which framework's idioms to use; None if none named.
     return [
-        Task(order=i, description=desc.strip())
+        Task(order=i, description=desc.strip(), framework=fw)
         for i, desc in enumerate(descriptions, start=1)
         if desc and desc.strip()
     ]

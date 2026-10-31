@@ -6,9 +6,12 @@ by Planner/Developer/QA.
 """
 import logging
 
+import time
+
 import requests
 
 from app.config import settings
+from app.pipeline import metrics
 
 logger = logging.getLogger("aiopsforge.embeddings")
 
@@ -26,7 +29,17 @@ _dimension_checked = False
 
 
 def embed(text: str) -> list[float]:
-    """Returns a single embedding vector for `text`."""
+    """Returns a single embedding vector for `text` (timed as kind='embed' by app.pipeline.metrics)."""
+    t0 = time.time()
+    try:
+        return _embed(text)
+    except Exception:
+        metrics.record_embed(settings.embedding_model, (time.time() - t0) * 1000, text, ok=False)
+        raise
+
+
+def _embed(text: str) -> list[float]:
+    t0 = time.time()
     response = requests.post(
         f"{settings.ollama_base_url}/api/embeddings",
         json={
@@ -62,4 +75,5 @@ def embed(text: str) -> list[float]:
             logger.info("embedding_model=%s confirmed at %d dimensions", settings.embedding_model, len(vector))
         _dimension_checked = True
 
+    metrics.record_embed(settings.embedding_model, (time.time() - t0) * 1000, text)
     return vector

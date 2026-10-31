@@ -2,7 +2,8 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+# nodejs + npm: QA for Express / Next.js apps (node --check, npm test, next build).
+RUN apt-get update && apt-get install -y --no-install-recommends curl nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

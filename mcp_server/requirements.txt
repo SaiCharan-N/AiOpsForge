@@ -1,3 +1,9 @@
 mcp==1.9.4
+pydantic==2.10.3
 uvicorn[standard]==0.32.1
 pytest==8.3.4
+# Single-file Flask/FastAPI *code* tasks ("write a Flask route ... with a test") are
+# tested by run_tests in this environment. Whole web apps are NOT: they run in their own per-project .venv.
+flask==3.0.3
+fastapi==0.115.6
+httpx==0.28.1

@@ -18,6 +18,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 from app.config import settings
+from app.pipeline import metrics
 
 
 @asynccontextmanager
@@ -50,13 +51,16 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> str:
     """Calls a single MCP tool by name and returns its text output.
     Raises RuntimeError if the tool itself reported an error.
     """
-    async with mcp_session() as session:
-        result = await session.call_tool(name, arguments)
-        text_parts = [c.text for c in result.content if hasattr(c, "text")]
-        output = "\n".join(text_parts)
-        if result.isError:
-            raise RuntimeError(f"MCP tool '{name}' failed: {output}")
-        return output
+    # Timed as kind='tool' (includes opening the MCP session, which is a
+    # real per-call cost of this design — see the module docstring).
+    with metrics.timed("tool", name):
+        async with mcp_session() as session:
+            result = await session.call_tool(name, arguments)
+            text_parts = [c.text for c in result.content if hasattr(c, "text")]
+            output = "\n".join(text_parts)
+            if result.isError:
+                raise RuntimeError(f"MCP tool '{name}' failed: {output}")
+            return output
 
 
 def tools_catalog_for_prompt(tools: list[dict[str, Any]]) -> str:

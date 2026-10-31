@@ -32,4 +32,10 @@ export const EVENT_TO_NODE = {
   task_complete: null,
   pipeline_start: 'planner',
   pipeline_done: 'idle',
+  // User intervention: pausing doesn't change which agent just ran, so the
+  // diagram keeps its highlight (App dims it while paused).
+  pause_requested: null,
+  pipeline_paused: null,
+  pipeline_resumed: null,
+  plan_revised: 'planner',
 }
